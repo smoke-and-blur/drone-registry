@@ -23,7 +23,9 @@ type Card struct {
 	Model  string            `bson:"model"         json:"model"`
 	Fields map[string]string `bson:"fields"        json:"fields"`
 	Checks []string          `bson:"checks"        json:"checks"`
-	Photos []Photo           `bson:"photos"        json:"photos"`
+	// Вказівник, щоб відрізнити "поле не надіслали" (nil — не чіпаємо)
+	// від "надіслали порожній список" (явне видалення).
+	Photos *[]Photo `bson:"photos"        json:"photos"`
 	// Кількість фото — для списку, де вантажиться лише перше.
 	PhotoCount int       `bson:"photoCount"    json:"photoCount"`
 	UpdatedAt  time.Time `bson:"updatedAt"     json:"updatedAt"`
@@ -136,36 +138,41 @@ func save(w http.ResponseWriter, r *http.Request) {
 	if c.Fields == nil {
 		c.Fields = map[string]string{}
 	}
-	if c.Photos == nil {
-		c.Photos = []Photo{}
-	}
-	if len(c.Photos) > maxPhotos {
-		http.Error(w, "too many photos", http.StatusBadRequest)
-		return
-	}
-	for _, p := range c.Photos {
-		if len(p.Data) > maxPhotoSz {
-			http.Error(w, "photo too large", http.StatusBadRequest)
+	if c.Photos != nil {
+		if len(*c.Photos) > maxPhotos {
+			http.Error(w, "too many photos", http.StatusBadRequest)
 			return
 		}
-		if !strings.HasPrefix(p.Data, "data:image/") {
-			http.Error(w, "bad photo format", http.StatusBadRequest)
-			return
+		for _, p := range *c.Photos {
+			if len(p.Data) > maxPhotoSz {
+				http.Error(w, "photo too large", http.StatusBadRequest)
+				return
+			}
+			if !strings.HasPrefix(p.Data, "data:image/") {
+				http.Error(w, "bad photo format", http.StatusBadRequest)
+				return
+			}
 		}
 	}
 	now := time.Now().UTC()
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
+	set := bson.M{
+		"model":     c.Model,
+		"fields":    c.Fields,
+		"checks":    c.Checks,
+		"updatedAt": now,
+	}
+	// Фото чіпаємо лише тоді, коли клієнт їх надіслав. Інакше картку,
+	// збережену без цього поля, було б назавжди позбавлено знімків.
+	if c.Photos != nil {
+		set["photos"] = *c.Photos
+		set["photoCount"] = len(*c.Photos)
+	}
+
 	_, err := cards.UpdateByID(ctx, c.SN, bson.M{
-		"$set": bson.M{
-			"model":      c.Model,
-			"fields":     c.Fields,
-			"checks":     c.Checks,
-			"photos":     c.Photos,
-			"photoCount": len(c.Photos),
-			"updatedAt":  now,
-		},
+		"$set":         set,
 		"$setOnInsert": bson.M{"createdAt": now},
 	}, options.Update().SetUpsert(true))
 	if err != nil {
@@ -218,8 +225,8 @@ func list(w http.ResponseWriter, r *http.Request) {
 	// Картки, збережені до появи photoCount, його не мають. Показуємо
 	// хоча б те, що фото є, поки картку не перезбережуть.
 	for i := range out {
-		if out[i].PhotoCount == 0 {
-			out[i].PhotoCount = len(out[i].Photos)
+		if out[i].PhotoCount == 0 && out[i].Photos != nil {
+			out[i].PhotoCount = len(*out[i].Photos)
 		}
 	}
 	writeJSON(w, out)

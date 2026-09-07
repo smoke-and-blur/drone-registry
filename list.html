@@ -83,6 +83,8 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
 .tag.fix{background:rgba(183,199,126,.15);border-color:var(--khaki);color:var(--khaki)}
 .tag.out{background:rgba(214,110,96,.15);border-color:#D66E60;color:#D66E60}
 .dmg{font-family:var(--mono);font-size:13px;color:var(--stencil2)}
+.cost{font-family:var(--mono);font-size:12px;color:var(--khaki);font-weight:700;
+  white-space:nowrap}
 .empty{padding:48px 16px;text-align:center;color:var(--faded);font-size:14px}
 .ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.62);
   display:flex;align-items:center;justify-content:center;padding:16px}
@@ -154,6 +156,13 @@ function esc(s){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
   });
 }
+/* 12500 -> 12 500 ; 12500.5 -> 12 500.50 */
+function money(v){
+  var n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));
+  if(!isFinite(n)) return String(v);
+  var s=(Math.round(n*100)/100).toFixed(n%1?2:0);
+  return s.replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+}
 function fmt(iso){
   if(!iso) return '—';
   var d=new Date(iso);
@@ -183,6 +192,7 @@ function row(c){
       '<div class="cell hide"><span class="k">Власник</span>'+esc(who||'—')+'</div>'+
       '<div class="wholine">'+esc([f.unit,who].filter(Boolean).join(' · ')||'—')+'</div>'+
       '<div class="meta">'+st+
+        (f.cost?'<div class="cost">'+esc(money(f.cost))+' грн</div>':'')+
         '<div class="sub dmg">'+n+' поз.'+(np?' · '+np+' фото':'')+
           ' · '+esc(fmt(c.createdAt||c.updatedAt))+'</div></div>'+
     '</a>'+

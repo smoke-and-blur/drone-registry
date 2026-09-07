@@ -1360,10 +1360,10 @@ var ABBR={1:'ПП',2:'ПЛ',3:'ЗЛ',4:'ЗП'};
 var VERDICT=['Діагностика','Ремонт','Заміна вузлів','Списання'];
 var STATUS=[['fix','Відновлено'],['out','Не підлягає ремонту']];
 var TEXTF=['sn','bort','hours','date','unit','holder','callsign','post','holderPhone',
-           'basis','note','status','done','doneBy','techPhone','act'];
+           'basis','cost','note','status','done','doneBy','techPhone','act'];
 
 var S={sn:'',model:'',bort:'',hours:'',date:'',unit:'',holder:'',callsign:'',post:'',
-       holderPhone:'',basis:'',note:'',
+       holderPhone:'',basis:'',cost:'',note:'',
        status:'',done:'',doneBy:'',techPhone:'',act:'',pm:'fil',kCard:1,kStick:1,nStick:1,chk:{},ph:[]};
 
 function $(s){ return document.querySelector(s); }
@@ -1400,6 +1400,8 @@ function render(){
      fld('Підрозділ','<input id="f-unit" value="'+esc(S.unit)+'">')+
      fld('Телефон','<input id="f-holderPhone" inputmode="tel" value="'+esc(S.holderPhone)+'">')+
      fld('Підстава','<input id="f-basis" value="'+esc(S.basis)+'">')+
+     fld('Вартість виробу, грн',
+       '<input id="f-cost" inputmode="decimal" placeholder="0.00" value="'+esc(S.cost)+'">')+
     '</div>');
 
   var an=armCnt(1)+armCnt(2)+armCnt(3)+armCnt(4);
@@ -1732,6 +1734,20 @@ function markUnsaved(){
 }
 function keepDraft(){
   try{ localStorage.setItem('dc:'+S.sn,pack()); }catch(e){}
+  /* Фото зберігаємо окремо: у pack() їх немає, а втрачати знімки
+     при перезавантаженні не можна. Якщо місця бракує — не валимось. */
+  try{
+    if(S.photos&&S.photos.length)
+      localStorage.setItem('dcph:'+S.sn,JSON.stringify(S.photos));
+    else
+      localStorage.removeItem('dcph:'+S.sn);
+  }catch(e){
+    toast('Фото не вмістились у памʼять пристрою — збережіть картку');
+  }
+}
+function draftPhotos(sn){
+  try{ return JSON.parse(localStorage.getItem('dcph:'+sn)||'[]'); }
+  catch(e){ return []; }
 }
 /* ── фото: лише для перегляду, у друк не потрапляє ───────────── */
 var MAXPH=8,MAXPX=1280,JPEGQ=.72;
@@ -1846,11 +1862,13 @@ function addPhotos(files){
   });
 }
 function afterPhotos(){
+  photosKnown=true;              /* список змінили ми — він точно наш */
   dirty=true; save(); render();
 }
 function delPhoto(i){
   if(!S.photos||!S.photos[i]) return;
   S.photos.splice(i,1);
+  photosKnown=true;
   dirty=true; save(); render();
 }
 function viewPhoto(i){
@@ -1866,6 +1884,9 @@ function viewPhoto(i){
    вирішено конфлікт (або його не було). Доки dirty=false —
    локальні зміни на сервер не йдуть і нічого там не перетирають. */
 var syncT=0,dirty=false,unsaved=false,saving=false,loading=false;
+/* Чи достовірно відомий поточний список фото. Доки false — не чіпаємо
+   фото на сервері, щоб не стерти те, чого ми не бачили. */
+var photosKnown=false;
 function online(){ return /^https?:$/.test(location.protocol); }
 
 /* Знімок стану у форматі, який приймає сервер. */
@@ -1874,7 +1895,12 @@ function snap(){
   TEXTF.forEach(function(k){ if(S[k]) o[k]=S[k]; });
   var on=[]; for(var k in S.chk){ if(S.chk[k]) on.push(k); }
   on.sort();
-  return {sn:S.sn,model:S.model,fields:o,checks:on,photos:S.photos||[]};
+  var b={sn:S.sn,model:S.model,fields:o,checks:on};
+  /* photos надсилаємо ЛИШЕ якщо ми справді знаємо їхній стан.
+     Якщо картку відкрито, а фото не завантажились — поле пропускаємо,
+     і сервер лишає наявні знімки недоторканими. */
+  if(photosKnown) b.photos=S.photos||[];
+  return b;
 }
 /* Стан з рядка localStorage — без чіпання S. */
 function snapOf(q,photos){
@@ -1951,8 +1977,9 @@ function refreshSaveBtn(){
    Якщо одна сторона порожня — беремо непорожню (це доповнення, не конфлікт). */
 var FLBL={sn:'S/N',bort:'Бортовий номер',hours:'Наліт',date:'Дата',unit:'Підрозділ',
  holder:'Власник',callsign:'Позивний',post:'Посада',holderPhone:'Телефон власника',
- basis:'Підстава',note:'Примітка',status:'Статус',done:'Виконані роботи',
- doneBy:'Виконав',techPhone:'Телефон техніка',act:'Акт',model:'Модель'};
+ basis:'Підстава',cost:'Вартість виробу',note:'Примітка',status:'Статус',
+ done:'Виконані роботи',doneBy:'Виконав',techPhone:'Телефон техніка',
+ act:'Акт',model:'Модель'};
 
 function diff(a,b){
   var conf=[],m={fields:{},checks:[],model:'',sn:a.sn||b.sn};
@@ -2078,19 +2105,21 @@ function shareDlg(){
 /* Викликається при скануванні / відкритті S/N. Доки не вирішено,
    що робити з розбіжностями, dirty=false і на сервер нічого не йде. */
 function loadCard(sn,done){
-  dirty=false; loading=true; unsaved=false;
+  dirty=false; loading=true; unsaved=false; photosKnown=false;
   if(S.sn!==sn) S.photos=[];   /* інша картка — чужі фото не переносимо */
 
   /* Чернетка з цього пристрою — лише для випадку, коли сервера немає.
      База завжди має пріоритет: вона спільна для всіх. */
   var draft=null;
-  try{ var q=localStorage.getItem('dc:'+sn); if(q) draft=snapOf(q,S.photos||[]); }catch(e){}
+  var dph=draftPhotos(sn);
+  try{ var q=localStorage.getItem('dc:'+sn); if(q) draft=snapOf(q,dph); }catch(e){}
   if(draft) draft.sn=sn;
 
   function finish(){ loading=false; refreshSaveBtn(); done(); }
 
   if(!online()){
     if(draft){ useSnap(draft); toast('Чернетка з цього пристрою'); unsaved=true; }
+    photosKnown=true;            /* фото з чернетки — це весь наш стан */
     dirty=true; finish(); return;
   }
 
@@ -2104,15 +2133,19 @@ function loadCard(sn,done){
       /* Є в базі — беремо звідти, локальну чернетку відкидаємо:
          вона застаріла й більше не потрібна. */
       useSnap(snapOfCard(c));
+      photosKnown=true;          /* сервер віддав повний список фото */
       dropDraft(sn);
       dirty=true; finish(); return;
     }
     /* У базі немає — можливо, картку почали заповнювати офлайн. */
     if(draft){ useSnap(draft); toast('Незбережена чернетка з цього пристрою'); unsaved=true; }
+    photosKnown=true;            /* картки в базі немає: стирати нічого */
     dirty=true; finish();
   }).catch(function(e){
     if(e==='auth'){ loading=false; return; }
     if(draft){ useSnap(draft); toast('Сервер недоступний — чернетка з пристрою'); unsaved=true; }
+    /* photosKnown лишається false: ми не бачили, що на сервері,
+       тож при збереженні не надсилаємо photos і нічого не стираємо. */
     dirty=true; finish();
   });
 }
@@ -2120,6 +2153,7 @@ function loadCard(sn,done){
 /* Чернетка більше не потрібна, коли дані вже в базі. */
 function dropDraft(sn){
   try{ localStorage.removeItem('dc:'+sn); }catch(e){}
+  try{ localStorage.removeItem('dcph:'+sn); }catch(e){}
 }
 
 /* ── діалог вибору при розбіжностях ──────────────────────────── */
@@ -2497,6 +2531,7 @@ function fromJson(f){
     try{ var o=JSON.parse(rd.result);
       TEXTF.concat(['model']).forEach(function(k){ if(o[k]!=null) S[k]=o[k]; });
       S.chk=o.chk||{}; S.date=S.date||today(); loadTech();
+      photosKnown=true;
       dirty=true; save(); render();
     }catch(e){ toast('Файл не читається'); }
   };
