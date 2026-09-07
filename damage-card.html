@@ -189,23 +189,26 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .sheet>*:nth-child(n+2){display:none}
 .stick{background:var(--floor2);border:1px solid var(--seam2);border-radius:8px;
   padding:10px;display:grid;gap:8px;align-content:start;align-self:start}
-/* Позначки на стікері. Кожна має власне місце, бо можуть стояти
-   всі три водночас. Форми різні — стікер друкується чорно-білим. */
+/* Позначки — колонка праворуч, кожна з підписом: інакше форми
+   доводиться памʼятати. Форми різні, бо стікер чорно-білий. */
 .stick{position:relative}
-.s-mk{position:absolute;display:block;pointer-events:none}
-/* ▲ трикутник — є підстава */
-.mk-tri{top:7px;right:7px;width:0;height:0;
-  border-left:9px solid transparent;border-right:9px solid transparent;
-  border-bottom:16px solid var(--stencil)}
-/* ■ квадрат — незалежна діагностика */
-.mk-sq{top:30px;right:7px;width:16px;height:16px;background:var(--stencil)}
-/* ● коло — підлягає ремонту */
-.mk-cir{top:52px;right:8px;width:16px;height:16px;border-radius:50%;
-  background:var(--stencil)}
-/* ✕ хрест — не підлягає ремонту */
-.mk-x{top:74px;right:7px;width:17px;height:17px}
-.mk-x::before,.mk-x::after{content:'';position:absolute;top:7px;left:0;
-  width:17px;height:3px;background:var(--stencil)}
+.s-marks{position:absolute;top:7px;right:6px;display:flex;flex-direction:column;
+  gap:6px;align-items:center;pointer-events:none}
+.s-mkrow{display:flex;flex-direction:column;align-items:center;gap:2px}
+.s-mklbl{font-size:7px;letter-spacing:.2px;font-weight:800;color:var(--faded);
+  line-height:1;white-space:nowrap}
+.s-mk{display:block;flex:none}
+/* ▲ є підстава */
+.mk-tri{width:0;height:0;border-left:8px solid transparent;
+  border-right:8px solid transparent;border-bottom:14px solid var(--stencil)}
+/* ■ незалежна діагностика */
+.mk-sq{width:14px;height:14px;background:var(--stencil)}
+/* ● підлягає ремонту */
+.mk-cir{width:14px;height:14px;border-radius:50%;background:var(--stencil)}
+/* ✕ не підлягає ремонту */
+.mk-x{position:relative;width:15px;height:15px}
+.mk-x::before,.mk-x::after{content:'';position:absolute;top:6px;left:0;
+  width:15px;height:3px;background:var(--stencil)}
 .mk-x::before{transform:rotate(45deg)}
 .mk-x::after{transform:rotate(-45deg)}
 .mklegend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--faded);
@@ -239,6 +242,9 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .s-meta{display:grid;grid-template-columns:1fr auto;gap:8px;font-family:var(--mono);
   font-size:12px;color:var(--faded)}
+/* Опис пошкоджень: один рядок, довше — з трикрапкою. */
+.s-note{font-size:12px;color:var(--stencil2);line-height:1.2;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .s-meta .r{text-align:right}
 .s-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .s-list{display:none;flex-wrap:wrap;gap:6px}
@@ -368,6 +374,8 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 }
 
 @media screen{ .qrblk,.sigs{display:none} }
+/* Стікер оцінюють у друку; на екрані показуємо лише легенду форм. */
+@media screen{ #stickBlk .sheet{display:none} }
 @media print{
   @page{size:A4;margin:10mm}
   html,body{background:#fff;color:#000;height:auto;min-height:0;overflow:visible}
@@ -468,19 +476,19 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   body.pr-stick .sheet>*:nth-child(n+2){display:grid}
   body.pr-stick .stick{background:#fff;border:0;border-right:.5pt dashed #000;
     border-bottom:.5pt dashed #000;border-radius:0;
-    width:70mm;height:50mm;padding:2.6mm 8mm 2.6mm 2.6mm;gap:1.2mm;
+    width:70mm;height:50mm;padding:2.6mm 12mm 2.6mm 2.6mm;gap:1.2mm;
     break-inside:avoid;margin:0;align-content:start;overflow:hidden}
-  /* Позначки: суцільний чорний, помітні з відстані. Розташовані
-     вертикально по правому краю, кожна на своєму рівні. */
-  body.pr-stick .mk-tri{top:2mm;right:2mm;
-    border-left:2.6mm solid transparent;border-right:2.6mm solid transparent;
-    border-bottom:4.6mm solid #000}
-  body.pr-stick .mk-sq{top:8.5mm;right:2mm;width:4.6mm;height:4.6mm;background:#000}
-  body.pr-stick .mk-cir{top:15mm;right:2mm;width:4.8mm;height:4.8mm;background:#000;
-    border-radius:50%}
-  body.pr-stick .mk-x{top:21.5mm;right:2mm;width:5mm;height:5mm}
+  /* Позначки: суцільний чорний, з підписами, колонкою праворуч. */
+  body.pr-stick .s-marks{top:2mm;right:1.6mm;gap:1.4mm}
+  body.pr-stick .s-mkrow{gap:.4mm}
+  body.pr-stick .s-mklbl{font-size:5pt;color:#000;font-weight:800}
+  body.pr-stick .mk-tri{border-left:2.2mm solid transparent;
+    border-right:2.2mm solid transparent;border-bottom:3.8mm solid #000}
+  body.pr-stick .mk-sq{width:3.8mm;height:3.8mm;background:#000}
+  body.pr-stick .mk-cir{width:3.9mm;height:3.9mm;background:#000;border-radius:50%}
+  body.pr-stick .mk-x{width:4mm;height:4mm}
   body.pr-stick .mk-x::before,body.pr-stick .mk-x::after{
-    top:2mm;left:0;width:5mm;height:1mm;background:#000}
+    top:1.5mm;left:0;width:4mm;height:1mm;background:#000}
   body.pr-stick .s-hd{gap:.8mm}
   body.pr-stick .s-unit{font-size:15pt;line-height:1.05;color:#000}
   body.pr-stick .s-unit .st{font-size:8pt;color:#000}
@@ -489,8 +497,9 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   body.pr-stick .s-mdl{font-size:11pt;line-height:1.1;color:#000}
   body.pr-stick .s-sn{font-size:12pt;letter-spacing:.1px;line-height:1.1;color:#000}
   body.pr-stick .s-meta{font-size:7.5pt;color:#444}
-  body.pr-stick .s-grid{gap:.8mm}
-  body.pr-stick .s-c{background:#fff;border:var(--pl);border-radius:1px;height:4.4mm;
+  body.pr-stick .s-grid{gap:.6mm}
+  body.pr-stick .s-note{font-size:7pt;line-height:1.15;color:#000;font-weight:600}
+  body.pr-stick .s-c{background:#fff;border:var(--pl);border-radius:1px;height:3.8mm;
     font-size:8pt;line-height:1;align-items:center;padding:0 1mm;gap:.8mm;
     overflow:hidden;white-space:nowrap;font-weight:600}
   body.pr-stick .s-c .box{border-color:#000;border-radius:0;width:9px;height:9px;min-width:9px}
@@ -1533,8 +1542,9 @@ function render(){
 
   h+=blk('i-qr','QR','','<div class="qrbox" id="qrbox">'+QR.svg(payload(),150)+'</div>','qrblk');
   h+='</div>';
-  h+='<div class="blk" id="stickBlk"><div class="blkh"><svg><use href="#i-tag"/></svg>Стікер'+
+  h+='<div class="blk" id="stickBlk"><div class="blkh"><svg><use href="#i-tag"/></svg>Позначки на стікері'+
      '</div><div class="sheet">'+sheet()+'</div>'+
+     '<p class="bhint noprint">Ці позначки друкуються на стікері.</p>'+
      '<div class="mklegend noprint">'+
        '<span><i class="lg-tri"></i>є підстава</span>'+
        '<span><i class="lg-sq"></i>незалежна діагностика</span>'+
@@ -1601,17 +1611,24 @@ function chk(id,t){ return '<div class="opt'+(S.chk[id]?' on':'')+'" data-k="'+i
    Діагностика / Ремонт / Заміна вузлів / Списання. Розкладаємо їх у
    нові іменовані ключі, щоб нічого не читалось хибно.
    Викликається один раз при завантаженні картки. */
+/* Обидва рішення водночас — суперечність. Лишаємо «не підлягає»:
+   це найсуворіший висновок, і мовчки послабити його було б гірше. */
+function fixVerdictConflict(chk){
+  if(chk&&chk['vd.fix']&&chk['vd.out']) chk['vd.fix']=false;
+  return chk;
+}
+
 function migrateVerdict(chk){
   if(!chk) return chk;
   var had=false;
   ['0','1','2','3'].forEach(function(n){ if(chk['vd.'+n]) had=true; });
-  if(!had) return chk;
+  if(!had) return fixVerdictConflict(chk);
   /* Діагностика -> нічого (не «незалежна»); Ремонт і Заміна вузлів ->
      підлягає ремонту; Списання -> не підлягає. */
   if(chk['vd.1']||chk['vd.2']) chk['vd.fix']=true;
   if(chk['vd.3']) chk['vd.out']=true;
   ['0','1','2','3'].forEach(function(n){ delete chk['vd.'+n]; });
-  return chk;
+  return fixVerdictConflict(chk);
 }
 
 function shortName(k){
@@ -1685,17 +1702,20 @@ function stick(){
     cells.push([b.s,cnt(id)>0]);
   });
   cells.push(['Інше',cnt('st')>0||cnt('kit')>0]);
-  var marks='';
-  if(S.basis)
-    marks+='<span class="s-mk mk-tri" title="Є підстава" aria-label="Є підстава"></span>';
-  /* Позначки незалежні: діагностика — факт, ремонт — рішення,
-     тож вони можуть стояти водночас. */
-  if(S.chk['vd.ind'])
-    marks+='<span class="s-mk mk-sq" title="Незалежна діагностика" aria-label="Незалежна діагностика"></span>';
-  if(S.chk['vd.fix'])
-    marks+='<span class="s-mk mk-cir" title="Підлягає ремонту" aria-label="Підлягає ремонту"></span>';
-  if(S.chk['vd.out'])
-    marks+='<span class="s-mk mk-x" title="Не підлягає ремонту" aria-label="Не підлягає ремонту"></span>';
+  /* Позначки з підписами. Діагностика — факт, ремонт — рішення,
+     тож перша поєднується з будь-яким рішенням. */
+  var mk=[];
+  if(S.basis)          mk.push(['tri','ПІДСТАВА','Є підстава']);
+  if(S.chk['vd.ind'])  mk.push(['sq','ДІАГН.','Незалежна діагностика']);
+  if(S.chk['vd.fix'])  mk.push(['cir','РЕМОНТ','Підлягає ремонту']);
+  if(S.chk['vd.out'])  mk.push(['x','СПИСАТИ','Не підлягає ремонту']);
+  var marks=mk.length
+    ? '<div class="s-marks">'+mk.map(function(m){
+        return '<div class="s-mkrow" title="'+esc(m[2])+'">'+
+          '<span class="s-mk mk-'+m[0]+'" aria-label="'+esc(m[2])+'"></span>'+
+          '<span class="s-mklbl">'+m[1]+'</span></div>';
+      }).join('')+'</div>'
+    : '';
 
   return '<div class="stick">'+
     marks+
@@ -1718,7 +1738,9 @@ function stick(){
         esc(shortName(k))+'</span>'; }).join('')+'</div>'+
     '<div class="s-grid">'+cells.map(function(c){
       return '<div class="s-c'+(c[1]?' on':'')+'"><span class="box"><svg><use href="#i-check"/></svg></span>'+c[0]+'</div>';
-    }).join('')+'</div></div>';
+    }).join('')+'</div>'+
+    (S.note?'<div class="s-note">'+esc(S.note)+'</div>':'')+
+    '</div>';
 }
 
 
@@ -1731,7 +1753,16 @@ function bind(){
   function act(e){
     var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns]');
     if(!t) return;
-    if(t.dataset.k!==undefined){ flip(t); return; }
+    if(t.dataset.k!==undefined){
+      /* Протилежні рішення взаємовиключні: вмикаючи одне, гасимо інше. */
+      var op={'vd.fix':'vd.out','vd.out':'vd.fix'}[t.dataset.k];
+      if(op&&!S.chk[t.dataset.k]&&S.chk[op]){
+        S.chk[op]=false;
+        [].forEach.call(document.querySelectorAll('[data-k="'+op+'"]'),function(e){
+          e.classList.remove('on'); e.setAttribute('aria-checked','false'); });
+      }
+      flip(t); return;
+    }
     if(t.dataset.st!==undefined){
       S.status=(S.status===t.dataset.st)?'':t.dataset.st; save();
       [].forEach.call(t.parentNode.children,function(x){
