@@ -48,8 +48,24 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
   border-radius:11px;outline:none;font-family:inherit}
 #q:focus{border-color:var(--khaki);background:var(--crate2)}
 #q::placeholder{color:#5E655B}
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.fbtn{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;
+  border-radius:9px;border:1px solid var(--seam2);background:var(--crate2);
+  color:var(--stencil2);font:inherit;font-size:11px;font-weight:700;
+  letter-spacing:.3px;cursor:pointer;white-space:nowrap}
+.fbtn:hover{border-color:var(--faded)}
+.fbtn.on{border-color:var(--khaki);color:var(--khaki);background:rgba(183,199,126,.12)}
+.fbtn .fn{font-family:var(--mono);font-weight:400;opacity:.7;font-size:10.5px}
+.fbtn i{flex:none}
+.listhead{display:flex;align-items:center;justify-content:space-between;
+  gap:12px;flex-wrap:wrap}
 .count{font-size:11px;letter-spacing:.7px;text-transform:uppercase;
   color:var(--faded);font-weight:700}
+/* Що означає кожен значок у колонках праворуч. */
+.tagkey{display:flex;align-items:center;gap:10px;font-size:10.5px;
+  color:var(--faded);flex-wrap:wrap}
+.tagkey span{display:flex;align-items:center;gap:4px;white-space:nowrap}
+@media(max-width:860px){.tagkey{display:none}}
 
 .rows{display:grid;gap:8px}
 .rowwrap{position:relative}
@@ -64,7 +80,8 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
 .idcell{min-width:0}
 .snfull{display:block;font-size:10.5px;font-weight:400;letter-spacing:.2px;
   color:var(--faded);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.meta{text-align:right;min-width:0}
+.meta{min-width:0;display:grid;gap:5px;justify-items:end}
+.meta .sub{text-align:right}
 .row:hover{border-color:var(--seam2);background:var(--crate2)}
 .del{position:absolute;right:8px;top:50%;transform:translateY(-50%);
   width:32px;height:32px;border-radius:9px;border:1px solid transparent;
@@ -80,10 +97,21 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
 .cell{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}
 .cell .k{font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;
   color:var(--faded);font-weight:700;display:block}
-.tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;
-  font-size:11px;font-weight:700;letter-spacing:.4px;
-  border:1px solid var(--seam2);color:var(--stencil2);white-space:nowrap}
-.meta .tag{margin:0 0 3px 4px}
+/* Чотири слоти під значки однакової ширини + статус словом. */
+.tagrow{display:grid;grid-template-columns:repeat(4,20px) minmax(0,1fr);
+  gap:4px;align-items:center;justify-items:center}
+.mkslot{width:20px;height:20px;border-radius:6px;display:flex;
+  align-items:center;justify-content:center;
+  border:1px solid transparent;color:var(--stencil2)}
+.mkslot.on{border-color:var(--seam2);background:var(--floor2)}
+.mkslot.on:nth-child(3){color:var(--khaki);border-color:var(--khaki)}
+.mkslot.on:nth-child(4){color:#D66E60;border-color:#D66E60}
+.tag{display:flex;align-items:center;justify-content:center;padding:3px 8px;
+  border-radius:7px;font-size:10.5px;font-weight:700;letter-spacing:.3px;
+  border:1px solid var(--seam2);color:var(--stencil2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  min-width:0;justify-self:stretch}
+.tag.empty{border-color:transparent;background:transparent}
 .tag.fix{background:rgba(183,199,126,.15);border-color:var(--khaki);color:var(--khaki)}
 .tag.out{background:rgba(214,110,96,.15);border-color:#D66E60;color:#D66E60}
 .tag.basis{border-color:var(--seam2);color:var(--stencil2)}
@@ -142,9 +170,12 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
   .cell.hide{display:none}
   .wholine{grid-area:who;display:block;font-size:12.5px;color:var(--stencil2);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-  .meta{grid-area:meta;text-align:left;display:flex;align-items:center;
-    gap:8px;flex-wrap:wrap;min-width:0}
-  .meta .sub{margin:0}
+  .meta{grid-area:meta;display:flex;align-items:center;
+    gap:8px;flex-wrap:wrap;min-width:0;justify-items:start}
+  .meta .sub{margin:0;text-align:left}
+  /* На вузькому екрані слоти стоять поруч із текстом, а не колонкою. */
+  .tagrow{grid-template-columns:repeat(4,20px) auto;justify-content:start}
+  .tag{justify-self:start}
   .sn{font-size:16px}
   .del{top:8px;transform:none}
 }
@@ -171,7 +202,11 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
 
 <div class="wrap">
   <input id="q" placeholder="Пошук за S/N, бортовим, підрозділом, власником…" autocomplete="off">
-  <div class="count" id="count">Завантаження…</div>
+  <div class="filters" id="filters"></div>
+  <div class="listhead">
+    <span class="count" id="count">Завантаження…</span>
+    <div class="tagkey" id="tagkey"></div>
+  </div>
   <div class="rows" id="rows"></div>
 </div>
 
@@ -200,19 +235,30 @@ function fmt(iso){
 }
 /* Плашки стану: підстава, висновок, статус робіт.
    Назви й форми — зі спільного models.js, щоб усюди збігались. */
+/* Слоти позначок у фіксованому порядку: підстава, потім висновки.
+   Порожній слот займає місце, тож у всіх рядках однакова позначка
+   стоїть в одній колонці — список читається як таблиця. */
+function markSlots(){
+  return [{k:'basis',mk:BASIS.mk,t:BASIS.t,short:BASIS.short}].concat(
+    VERDICT.map(function(v){
+      return {k:'vd.'+v.k,mk:v.mk,t:v.t,short:v.short};
+    }));
+}
+
 function tags(c,f){
-  var out=[],chk=migrateChecks(c.checks||[]);   /* старі vd.0..3 */
-  if(f.basis)
-    out.push('<span class="tag basis" title="'+esc(BASIS.t+': '+f.basis)+'">'+
-      '<i class="lg-'+BASIS.mk+'"></i>'+esc(BASIS.short)+'</span>');
-  VERDICT.forEach(function(v){
-    if(chk.indexOf('vd.'+v.k)<0) return;
-    out.push('<span class="tag vd-'+v.k+'" title="'+esc(v.t)+'">'+
-      '<i class="lg-'+v.mk+'"></i>'+esc(v.short)+'</span>');
-  });
-  if(f.status)
-    out.push('<span class="tag '+esc(f.status)+'">'+esc(STLBL[f.status]||f.status)+'</span>');
-  return out.join('');
+  var chk=migrateChecks(c.checks||[]);
+  var cells=markSlots().map(function(sl){
+    var on=sl.k==='basis'?!!f.basis:chk.indexOf(sl.k)>=0;
+    if(!on) return '<span class="mkslot" aria-hidden="true"></span>';
+    var tip=sl.k==='basis'?sl.t+': '+f.basis:sl.t;
+    return '<span class="mkslot on" title="'+esc(tip)+'" aria-label="'+esc(tip)+'">'+
+      '<i class="lg-'+sl.mk+'"></i></span>';
+  }).join('');
+  var st=f.status
+    ? '<span class="tag '+esc(f.status)+'" title="Статус: '+esc(STLBL[f.status]||f.status)+'">'+
+      esc(STLBL[f.status]||f.status)+'</span>'
+    : '<span class="tag empty" aria-hidden="true"></span>';
+  return '<div class="tagrow">'+cells+st+'</div>';
 }
 
 function row(c){
@@ -247,11 +293,50 @@ function row(c){
     '</button>'+
   '</div>';
 }
+/* Фільтри за станом. Кожен — окремий перемикач; увімкнені діють
+   разом (І), тож можна звузити до «офіційні, що не підлягають». */
+var FILTERS=[
+  {k:'basis', mk:BASIS.mk, t:BASIS.short,
+   test:function(c,f){ return !!f.basis; }},
+  {k:'ind',   mk:'sq',  t:'ДІАГНОСТИКА',
+   test:function(c,f,chk){ return chk.indexOf('vd.ind')>=0; }},
+  {k:'fix',   mk:'cir', t:'РЕМОНТ',
+   test:function(c,f,chk){ return chk.indexOf('vd.fix')>=0; }},
+  {k:'out',   mk:'x',   t:'НЕ ПІДЛЯГАЄ',
+   test:function(c,f,chk){ return chk.indexOf('vd.out')>=0; }},
+  {k:'photo', mk:'',    t:'З ФОТО',
+   test:function(c){ return (c.photoCount||0)>0; }}
+];
+var active={};
+
+function renderFilters(){
+  var box=document.getElementById('filters');
+  box.innerHTML=FILTERS.map(function(fl){
+    var n=all.filter(function(c){
+      return fl.test(c,c.fields||{},migrateChecks(c.checks||[]));
+    }).length;
+    return '<button type="button" class="fbtn'+(active[fl.k]?' on':'')+'" '+
+      'data-f="'+fl.k+'" aria-pressed="'+!!active[fl.k]+'">'+
+      (fl.mk?'<i class="lg-'+fl.mk+'"></i>':'')+esc(fl.t)+
+      '<span class="fn">'+n+'</span></button>';
+  }).join('');
+  [].forEach.call(box.querySelectorAll('[data-f]'),function(b){
+    b.onclick=function(){
+      var k=b.getAttribute('data-f');
+      if(active[k]) delete active[k]; else active[k]=true;
+      renderFilters(); draw();
+    };
+  });
+}
+
 function draw(){
-  var q=document.getElementById('q').value.trim().toLowerCase(),
-      hit=!q?all:all.filter(function(c){
-        return JSON.stringify([c.sn,c.model,c.fields]).toLowerCase().indexOf(q)>=0;
-      });
+  var q=document.getElementById('q').value.trim().toLowerCase();
+  var on=FILTERS.filter(function(fl){ return active[fl.k]; });
+  var hit=all.filter(function(c){
+    if(q&&JSON.stringify([c.sn,c.model,c.fields]).toLowerCase().indexOf(q)<0) return false;
+    var f=c.fields||{},chk=migrateChecks(c.checks||[]);
+    return on.every(function(fl){ return fl.test(c,f,chk); });
+  });
   document.getElementById('count').textContent=hit.length+' з '+all.length+' карток';
   document.getElementById('rows').innerHTML=hit.length?hit.map(row).join(''):
     '<div class="empty">Нічого не знайдено</div>';
@@ -322,11 +407,20 @@ document.getElementById('rows').addEventListener('click',function(e){
   delDlg(b.getAttribute('data-del'));
 });
 
+/* Підписи до колонок значків — інакше їх довелося б вгадувати. */
+function renderKey(){
+  var box=document.getElementById('tagkey');
+  if(!box) return;
+  box.innerHTML=markSlots().map(function(sl){
+    return '<span title="'+esc(sl.t)+'"><i class="lg-'+sl.mk+'"></i>'+esc(sl.short)+'</span>';
+  }).join('');
+}
+
 fetch('/api/cards').then(function(r){
   if(r.status===401){ location.href='/login'; return []; }
   return r.json();
 }).then(function(d){
-  all=d||[]; draw();
+  all=d||[]; renderKey(); renderFilters(); draw();
 }).catch(function(){
   document.getElementById('count').textContent='Помилка з’єднання';
 });
