@@ -1426,15 +1426,17 @@ var ARMCOLS=[
 var ABBR={1:'ПП',2:'ПЛ',3:'ЗЛ',4:'ЗП'};
 /* Висновок. Можна відмітити кілька: «незалежна діагностика» — це факт
    перевірки, а «підлягає / не підлягає» — рішення.
-   Ключі vd.N уже збережені в базі, тому індекси стабільні. */
+   Ключі — ІМЕНА (vd.ind тощо), а не індекси: інакше зміна складу
+   списку мовчки перетлумачила б уже збережені картки. */
 /* Форма позначки для кожного пункту висновку (див. легенду стікера). */
 var MKSHAPE=['sq','cir','x'];
 var VERDICT=[
-  {k:'ind',t:'Незалежна діагностика',s:'НЕЗАЛЕЖНА ДІАГНОСТИКА'},
-  {k:'fix',t:'Підлягає ремонту',s:'ПІДЛЯГАЄ РЕМОНТУ'},
-  {k:'out',t:'Не підлягає ремонту',s:'НЕ ПІДЛЯГАЄ РЕМОНТУ'}
+  {k:'ind',t:'Незалежна діагностика'},
+  {k:'fix',t:'Підлягає ремонту'},
+  {k:'out',t:'Не підлягає ремонту'}
 ];
-var STATUS=[['fix','Відновлено'],['out','Не підлягає ремонту']];
+/* Статус — РЕЗУЛЬТАТ виконаних робіт (не рішення: воно у «Висновку»). */
+var STATUS=[['fix','Відновлено'],['out','Списано']];
 var TEXTF=['sn','bort','hours','date','unit','holder','callsign','post','holderPhone',
            'basis','cost','note','status','done','doneBy','techPhone','act'];
 
@@ -1501,7 +1503,7 @@ function render(){
     '<p class="bhint">Можна відмітити кілька: діагностика — це факт перевірки, '+
       'ремонт — рішення щодо виробу. Позначене відображається на стікері.</p>'+
     '<div class="opts">'+VERDICT.map(function(v,i){
-      return chk('vd.'+i,v.t+' <i class="lg-'+MKSHAPE[i]+' inl"></i>');
+      return chk('vd.'+v.k,v.t+' <i class="lg-'+MKSHAPE[i]+' inl"></i>');
     }).join('')+
       '<div class="field ta full"><span class="lbl">Опис пошкоджень</span>'+
       '<textarea id="f-note">'+esc(S.note)+'</textarea></div>'+
@@ -1595,6 +1597,23 @@ function pad(html,n){
 }
 function chk(id,t){ return '<div class="opt'+(S.chk[id]?' on':'')+'" data-k="'+id+'" role="checkbox" tabindex="0" aria-checked="'+(!!S.chk[id])+'">'+
   '<span class="box"><svg><use href="#i-check"/></svg></span><span>'+t+'</span></div>'; }
+/* Старі картки зберігали висновок за позицією (vd.0..vd.3) зі списку
+   Діагностика / Ремонт / Заміна вузлів / Списання. Розкладаємо їх у
+   нові іменовані ключі, щоб нічого не читалось хибно.
+   Викликається один раз при завантаженні картки. */
+function migrateVerdict(chk){
+  if(!chk) return chk;
+  var had=false;
+  ['0','1','2','3'].forEach(function(n){ if(chk['vd.'+n]) had=true; });
+  if(!had) return chk;
+  /* Діагностика -> нічого (не «незалежна»); Ремонт і Заміна вузлів ->
+     підлягає ремонту; Списання -> не підлягає. */
+  if(chk['vd.1']||chk['vd.2']) chk['vd.fix']=true;
+  if(chk['vd.3']) chk['vd.out']=true;
+  ['0','1','2','3'].forEach(function(n){ delete chk['vd.'+n]; });
+  return chk;
+}
+
 function shortName(k){
   var a=k.split('.');
   if(a[0]==='arm'){
@@ -1608,6 +1627,10 @@ function nameOf(k){
   if(a[0]==='arm'){
     var c=ARMCOLS.filter(function(x){ return x[0]===a[2]; })[0];
     return 'М'+a[1]+' · '+(c?c[1]:a[2]);
+  }
+  if(a[0]==='vd'){
+    var v=VERDICT.filter(function(x){ return x.k===a[1]; })[0];
+    return v?v.t:a[1];
   }
   var b=BLOCKS.filter(function(x){ return x.id===a[0]; })[0];
   if(!b) return k;
@@ -1667,11 +1690,11 @@ function stick(){
     marks+='<span class="s-mk mk-tri" title="Є підстава" aria-label="Є підстава"></span>';
   /* Позначки незалежні: діагностика — факт, ремонт — рішення,
      тож вони можуть стояти водночас. */
-  if(S.chk['vd.0'])
+  if(S.chk['vd.ind'])
     marks+='<span class="s-mk mk-sq" title="Незалежна діагностика" aria-label="Незалежна діагностика"></span>';
-  if(S.chk['vd.1'])
+  if(S.chk['vd.fix'])
     marks+='<span class="s-mk mk-cir" title="Підлягає ремонту" aria-label="Підлягає ремонту"></span>';
-  if(S.chk['vd.2'])
+  if(S.chk['vd.out'])
     marks+='<span class="s-mk mk-x" title="Не підлягає ремонту" aria-label="Не підлягає ремонту"></span>';
 
   return '<div class="stick">'+
@@ -1815,6 +1838,7 @@ function unpack(q){
   TEXTF.concat(['model']).forEach(function(k){ if(p.get(k)!=null) S[k]=p.get(k); });
   S.chk={};
   (p.get('c')||'').split(',').forEach(function(k){ if(k) S.chk[k]=true; });
+  migrateVerdict(S.chk);
 }
 function link(){ return location.origin+location.pathname+'#'+pack(); }
 var TECHF=['doneBy','techPhone'];
@@ -2028,6 +2052,7 @@ function useSnap(n){
   TEXTF.forEach(function(k){ S[k]=n.fields[k]||''; });
   S.model=n.model||''; S.sn=n.sn||S.sn;
   S.chk={}; n.checks.forEach(function(k){ S.chk[k]=true; });
+  migrateVerdict(S.chk);       /* старі vd.0..3 -> іменовані ключі */
   S.photos=n.photos||[];
 }
 
@@ -2321,6 +2346,7 @@ function accept(v){
     try{ var o=JSON.parse(t);
       TEXTF.concat(['model']).forEach(function(k){ if(o[k]!=null) S[k]=o[k]; });
       S.chk={}; (o.c||[]).forEach(function(k){ S.chk[k]=true; });
+      migrateVerdict(S.chk);
       stopCam(); S.date=S.date||today(); loadTech();
       dirty=true; save(); render(); return true;
     }catch(e){}
@@ -2624,7 +2650,7 @@ function fromJson(f){
   rd.onload=function(){
     try{ var o=JSON.parse(rd.result);
       TEXTF.concat(['model']).forEach(function(k){ if(o[k]!=null) S[k]=o[k]; });
-      S.chk=o.chk||{}; S.date=S.date||today(); loadTech();
+      S.chk=migrateVerdict(o.chk||{}); S.date=S.date||today(); loadTech();
       photosKnown=true;
       dirty=true; save(); render();
     }catch(e){ toast('Файл не читається'); }
