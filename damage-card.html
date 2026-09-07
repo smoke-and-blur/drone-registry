@@ -80,6 +80,15 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   padding:10px 11px;display:grid;gap:8px;min-width:0}
 .blk>*{min-width:0}
 .wrap>*{min-width:0}
+.savebar{position:sticky;bottom:0;z-index:15;display:flex;align-items:center;gap:10px;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  background:rgba(14,18,16,.94);backdrop-filter:blur(8px);
+  border-top:1px solid var(--seam);margin:0 -12px -80px}
+.savebar .btn{width:auto;min-width:150px;flex:none}
+.savebar .btn:disabled{opacity:.6;cursor:default}
+.sstate{flex:1;min-width:0;font-size:12px;color:var(--faded);line-height:1.35}
+.sstate.warn{color:var(--khaki)}
+.bhint{font-size:11.5px;color:var(--faded);line-height:1.4;margin:-2px 0 2px}
 .blkh{display:flex;align-items:center;gap:8px;font-weight:800;font-size:11.5px;height:18px;
   letter-spacing:1.4px;text-transform:uppercase;color:var(--stencil2);white-space:nowrap}
 .blkh svg{width:15px;height:15px;color:var(--khaki)}
@@ -329,6 +338,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   .blkh{color:#000;font-size:6pt;height:auto;padding:0 0 3px;margin:0 0 -1px;
     letter-spacing:.8px;background:none;display:flex}
   .blkh svg{display:none}
+  .bhint{display:none}
   .blkh .n{display:none}
   .fields,.fields.c3,.opts,.opts.c3{display:grid;grid-template-columns:repeat(2,1fr);gap:0;
     border-top:var(--pl);border-left:var(--pl)}
@@ -507,6 +517,12 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   <input type="file" id="photoCam" accept="image/*" capture="environment" hidden>
     </div>
     <div id="card" hidden></div>
+    <div class="savebar noprint" id="savebar" hidden>
+      <span class="sstate" id="sstate"></span>
+      <button class="btn" id="bSave" type="button" disabled>
+        <svg><use href="#i-check"/></svg><span class="t">Збережено</span>
+      </button>
+    </div>
   </div>
 </div>
 <div id="toast"></div>
@@ -1272,18 +1288,23 @@ var QR=(function(){
 })();
 
 /* ── довідники ───────────────────────────────────────────────── */
-var MODELS={m3t:'DJI Mavic 3T',m3p:'DJI Mavic 3 Pro',m30t:'DJI Matrice 30T',evo:'Autel EVO MAX 4T'};
-var SHORT={m3t:'MAVIC 3T',m3p:'MAVIC 3 PRO',m30t:'MATRICE 30T',evo:'EVO MAX 4T'};
+var MODELS={m3t:'DJI Mavic 3T',m3ta:'DJI Mavic 3TA',m3p:'DJI Mavic 3 Pro',
+            m30t:'DJI Matrice 30T',m4t:'DJI Matrice 4T',m4e:'DJI Matrice 4E',
+            evo:'Autel EVO MAX 4T'};
+var SHORT={m3t:'MAVIC 3T',m3ta:'MAVIC 3TA',m3p:'MAVIC 3 PRO',
+           m30t:'MATRICE 30T',m4t:'MATRICE 4T',m4e:'MATRICE 4E',
+           evo:'EVO MAX 4T'};
 var SN2MODEL={
  '1581F5FJC244P00D6Z39':'m3t','1581F5FJC243K00DY322':'m3t',
  '158F67QC249T0145H54':'m3p','1581F67QC249T0145H2V':'m3p',
  '1581F5BKD238700E1966':'m30t','1581F5BKD238A00EM103':'m30t','1581F5BKD237F00EVJC8':'m30t',
  '1748FEV3HMA923171199':'evo'};
-var ALL=['m3t','m3p','m30t','evo'];
+var ALL=['m3t','m3ta','m3p','m30t','m4t','m4e','evo'];
 function only(){ return Array.prototype.slice.call(arguments); }
 
 var BLOCKS=[
- {id:'st',t:'Стан при прийманні',ic:'i-alert',s:'Стан',items:[
+ {id:'st',t:'Виявлені несправності та обставини',ic:'i-alert',s:'Стан',
+  hint:'Позначте те, що виявлено при прийманні.',items:[
   ['nopwr','Не вмикається',ALL],['selftest','Помилка самотесту',ALL],
   ['nofly','Не злітає',ALL],['unstable','Нестабільний політ',ALL],
   ['fall','Падіння',ALL],['impact','Удар',ALL],
@@ -1291,33 +1312,42 @@ var BLOCKS=[
   ['water','Потрапляння води',ALL],['burn','Перегрів',ALL],
   ['melt','Оплавлення',ALL],['link','Втрата зв\'язку',ALL],
   ['imu','Збій IMU',ALL],['comp','Збій компаса',ALL],
-  ['gps','Збій GPS/RTK',ALL],['vib','Вібрація',ALL],
-  ['noise','Сторонній шум',ALL]]},
- {id:'bd',t:'Корпус',ic:'i-body',s:'Корпус',items:[
+  ['gps','Збій GPS/RTK',ALL],
+  ['vib','Підвищена вібрація',ALL],
+  ['noise','Сторонній шум при роботі',ALL]]},
+ {id:'bd',t:'Пошкодження корпусу',ic:'i-body',s:'Корпус',
+  hint:'Позначте лише пошкоджені елементи.',items:[
   ['mid','Середня частина',ALL],['top','Верхня кришка',ALL],
-  ['bot','Нижня частина',ALL],['front','Передня накладка',only('m30t','evo')],
-  ['batbay','Батарейний відсік',only('m30t','evo')],['glass','Скло сенсора',ALL],
-  ['rad','Радіатор',only('m30t','evo')],['vent','Вентилятор',only('m30t','evo')],
-  ['legs','Посадкові опори',only('m30t','evo')],['label','Маркування S/N',ALL]]},
- {id:'gm',t:'Підвіс',ic:'i-gimbal',s:'Підвіс',items:[
+  ['bot','Нижня частина',ALL],['front','Передня накладка',only('m30t','m4t','m4e','evo')],
+  ['batbay','Батарейний відсік',only('m30t','m4t','m4e','evo')],['glass','Скло сенсора',ALL],
+  ['rad','Радіатор',only('m30t','m4t','m4e','evo')],
+  ['vent','Вентилятор',only('m30t','m4t','m4e','evo')],
+  ['legs','Посадкові опори',only('m30t','m4t','m4e','evo')],
+  ['label','Табличка S/N (нечитабельна)',ALL]]},
+ {id:'gm',t:'Пошкодження підвісу',ic:'i-gimbal',s:'Підвіс',
+  hint:'Позначте лише пошкоджені елементи.',items:[
   ['yawm','YAW двигун',ALL],['pitm','PITCH двигун',ALL],['rolm','ROLL двигун',ALL],
   ['yawb','YAW кронштейн',ALL],['prb','PITCH/ROLL кронштейн',ALL],
   ['flex','Шлейф підвісу',ALL],['damp','Демпферна площадка',ALL],
-  ['shock','Амортизатори',ALL],['esc','ESC стабілізатора',only('m30t')]]},
- {id:'cm',t:'Камера',ic:'i-cam',s:'Камера',items:[
+  ['shock','Амортизатори',ALL],['esc','ESC стабілізатора',only('m30t','m4t','m4e')]]},
+ {id:'cm',t:'Пошкодження камери',ic:'i-cam',s:'Камера',
+  hint:'Позначте лише пошкоджені елементи.',items:[
   ['gimb','Камера в зборі',ALL],['vplate','Відеоплата',ALL],
   ['wide','Ширококутна камера',ALL],['zoom','ZOOM камера',ALL],
-  ['ir','Тепловізійний модуль',only('m3t','m30t','evo')],
-  ['lrf','Лазерний далекомір',only('m30t','evo')],
+  ['ir','Тепловізійний модуль',only('m3t','m3ta','m30t','m4t','evo')],
+  ['lrf','Лазерний далекомір',only('m30t','m4t','m4e','evo')],
   ['lens','Оптика',ALL],['cglass','Захисне скло',ALL]]},
- {id:'el',t:'Електроніка',ic:'i-chip',s:'Електроніка',items:[
+ {id:'el',t:'Пошкодження електроніки',ic:'i-chip',s:'Електроніка',
+  hint:'Позначте лише пошкоджені або несправні вузли.',items:[
   ['mb','Материнська плата',ALL],['pwr','Плата живлення',ALL],
   ['escm','ESC двигунів',ALL],['gnss','Модуль GNSS',ALL],
   ['radio','Модуль радіозв\'язку',ALL],['ant','Антенні кабелі',ALL],
   ['obs','Датчики перешкод',ALL],['down','Нижні сенсори висоти',ALL],
-  ['led','Бортові вогні',ALL],['spk','Гучномовець',only('m30t')],
-  ['spot','Прожектор',only('m30t')],['sd','Карта пам\'яті',ALL]]},
- {id:'kit',t:'Комплект',ic:'i-case',s:'Комплект',items:[
+  ['led','Бортові вогні',ALL],['spk','Гучномовець',only('m30t','m4t','m4e')],
+  ['spot','Прожектор',only('m30t','m4t','m4e')],
+  ['sd','Карта пам\'яті (відсутня/несправна)',ALL]]},
+ {id:'kit',t:'Пошкоджено або відсутнє в комплекті',ic:'i-case',s:'Комплект',
+  hint:'Позначте пошкоджене, несправне або відсутнє приладдя.',items:[
   ['bat','Акумулятор',ALL],['charge','Зарядний хаб',ALL],['psu','Блок живлення',ALL],
   ['rc','Пульт',ALL],['rcscr','Екран пульта',ALL],
   ['rcant','Антени пульта',ALL],['props','Пропелери',ALL],
@@ -1325,9 +1355,10 @@ var BLOCKS=[
 ];
 var ARMCOLS=[
  ['beam','Промінь',ALL],['mot','Двигун',ALL],['prop','Пропелер',ALL],
- ['fold','Механізм розкладання',ALL],['sens','Датчик розкладання',only('m30t')],
- ['wire','Силова проводка',only('m30t','evo')],['mount','Кріплення двигуна',ALL],
- ['rtk','Антена RTK',only('m30t')]];
+ ['fold','Механізм розкладання',ALL],
+ ['sens','Датчик розкладання',only('m30t','m4t','m4e')],
+ ['wire','Силова проводка',only('m30t','m4t','m4e','evo')],['mount','Кріплення двигуна',ALL],
+ ['rtk','Антена RTK',only('m30t','m4t','m4e')]];
 var ABBR={1:'ПП',2:'ПЛ',3:'ЗЛ',4:'ЗП'};
 var VERDICT=['Діагностика','Ремонт','Заміна вузлів','Списання'];
 var STATUS=[['fix','Відновлено'],['out','Не підлягає ремонту']];
@@ -1376,13 +1407,17 @@ function render(){
     '</div>');
 
   var an=armCnt(1)+armCnt(2)+armCnt(3)+armCnt(4);
-  h+=blk('i-arm','Промені та мотори',an,'<div class="mxwrap">'+armMatrix(m)+'</div>',
+  h+=blk('i-arm','Пошкодження променів і моторів',an,
+    '<p class="bhint">Позначте вузли, які мають пошкодження або несправні.</p>'+
+    '<div class="mxwrap">'+armMatrix(m)+'</div>',
     'chkblk'+(an?' has':''));
 
   BLOCKS.forEach(function(b){
     var it=b.items.filter(function(x){ return fits(m,x[2]); });
     if(!it.length) return;
-    h+=blk(b.ic,b.t,cnt(b.id),'<div class="opts">'+pad(it.map(function(x){
+    h+=blk(b.ic,b.t,cnt(b.id),
+      (b.hint?'<p class="bhint">'+b.hint+'</p>':'')+
+      '<div class="opts">'+pad(it.map(function(x){
       return chk(b.id+'.'+x[0],x[1]); }).join(''),it.length)+'</div>',
       'chkblk'+(cnt(b.id)?' has':''));
   });
@@ -1445,7 +1480,9 @@ function render(){
 
   document.title=fname();
   var c=$('#card'); c.innerHTML=h; c.hidden=false; $('#scanBlk').hidden=true;
+  $('#savebar').hidden=false;
   bind();
+  refreshSaveBtn();
 }
 function blk(ic,t,n,body,cls){
   return '<div class="blk'+(cls?' '+cls:'')+'"><div class="blkh"><svg><use href="#'+ic+'"/></svg>'+t+
@@ -1685,11 +1722,20 @@ function loadTech(){
     TECHF.forEach(function(k){ if(!S[k]&&o[k]) S[k]=o[k]; });
   }catch(e){}
 }
+/* Локальний запис: заголовок, адреса, чернетка на пристрої.
+   На сервер нічого не йде — для цього є кнопка «Зберегти». */
 function save(){
   document.title=fname();
   try{ history.replaceState(null,'','#'+pack()); }catch(e){}
+  if(S.sn) keepDraft();
+  markUnsaved();
+}
+function markUnsaved(){
+  if(!dirty||!S.sn) return;
+  unsaved=true; refreshSaveBtn();
+}
+function keepDraft(){
   try{ localStorage.setItem('dc:'+S.sn,pack()); }catch(e){}
-  sync();
 }
 /* ── фото: лише для перегляду, у друк не потрапляє ───────────── */
 var MAXPH=8,MAXPX=1280,JPEGQ=.72;
@@ -1823,7 +1869,7 @@ function viewPhoto(i){
 /* Запис на сервер увімкнено лише після того, як для цього S/N
    вирішено конфлікт (або його не було). Доки dirty=false —
    локальні зміни на сервер не йдуть і нічого там не перетирають. */
-var syncT=0,dirty=false;
+var syncT=0,dirty=false,unsaved=false,saving=false;
 function online(){ return /^https?:$/.test(location.protocol); }
 
 /* Знімок стану у форматі, який приймає сервер. */
@@ -1856,18 +1902,50 @@ function useSnap(n){
   S.photos=n.photos||[];
 }
 
+/* Явне збереження в базу. Повертає проміс, щоб інші дії
+   (друк, перехід до реєстру) могли дочекатись запису. */
 function sync(){
-  if(!dirty||!S.sn||!online()) return;
-  clearTimeout(syncT);
-  syncT=setTimeout(function(){
-    fetch('/api/cards',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(snap())
-    }).then(function(r){
-      if(r.status===401){ toast('Сесія завершилась — увійдіть знову');
-        setTimeout(function(){ location.href='/login'; },1200); return; }
-      if(!r.ok) throw 0;
-    }).catch(function(){ toast('Не збережено на сервері'); });
-  },600);
+  if(!S.sn){ toast('Спершу вкажіть серійний номер'); return Promise.resolve(false); }
+  if(!online()){ toast('Немає зв’язку — збережено як чернетку'); return Promise.resolve(false); }
+  if(saving) return Promise.resolve(false);
+
+  saving=true; refreshSaveBtn();
+  /* Фіксуємо картку на момент відправки: доки йде запит,
+     користувач міг відсканувати іншу. */
+  var body=snap(),sn=body.sn;
+  return fetch('/api/cards',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  }).then(function(r){
+    if(r.status===401){ toast('Сесія завершилась — увійдіть знову');
+      setTimeout(function(){ location.href='/login'; },1200); return false; }
+    if(!r.ok) throw 0;
+    dropDraft(sn);           /* дані в базі — чернетка зайва */
+    unsaved=false;
+    toast('Збережено');
+    return true;
+  }).catch(function(){
+    toast('Не вдалося зберегти. Дані лишились на пристрої.');
+    return false;
+  }).then(function(ok){
+    saving=false; refreshSaveBtn();
+    return ok;
+  });
+}
+
+/* Кнопка показує, чи є незбережені зміни. */
+function refreshSaveBtn(){
+  var b=$('#bSave'); if(!b) return;
+  b.disabled=saving||!unsaved;
+  b.classList.toggle('pri',unsaved&&!saving);
+  b.querySelector('.t').textContent=
+    saving?'Збереження…':(unsaved?'Зберегти':'Збережено');
+  var st=$('#sstate');
+  if(st){
+    st.classList.toggle('warn',unsaved&&!saving);
+    st.textContent=saving?'Надсилаю до бази…'
+      :(unsaved?'Є незбережені зміни'
+               :(S.sn?'Усі зміни в базі':'Вкажіть серійний номер'));
+  }
 }
 
 /* ── порівняння двох знімків ─────────────────────────────────── */
@@ -2005,12 +2083,15 @@ function shareDlg(){
 function loadCard(sn,done){
   dirty=false;
   if(S.sn!==sn) S.photos=[];   /* інша картка — чужі фото не переносимо */
-  var loc=null;
-  try{ var q=localStorage.getItem('dc:'+sn); if(q) loc=snapOf(q,S.photos||[]); }catch(e){}
-  if(loc) loc.sn=sn;
+
+  /* Чернетка з цього пристрою — лише для випадку, коли сервера немає.
+     База завжди має пріоритет: вона спільна для всіх. */
+  var draft=null;
+  try{ var q=localStorage.getItem('dc:'+sn); if(q) draft=snapOf(q,S.photos||[]); }catch(e){}
+  if(draft) draft.sn=sn;
 
   if(!online()){
-    if(loc){ useSnap(loc); toast('Відновлено картку '+sn); }
+    if(draft){ useSnap(draft); toast('Чернетка з цього пристрою'); }
     dirty=true; done(); return;
   }
 
@@ -2020,25 +2101,26 @@ function loadCard(sn,done){
     if(!r.ok) throw 0;
     return r.json();
   }).then(function(c){
-    var srv=c?snapOfCard(c):null;
-    if(srv) srv.sn=sn;
-
-    if(!srv&&!loc){ dirty=true; done(); return; }           // нова картка
-    if(srv&&!loc){ useSnap(srv); toast('Завантажено з сервера'); dirty=true; done(); return; }
-    if(loc&&!srv){ useSnap(loc); toast('Відновлено з цього пристрою'); dirty=true; done(); return; }
-
-    var d=diff(loc,srv);
-    if(d.same){ useSnap(srv); dirty=true; done(); return; }  // однакові
-    if(!d.conflicts.length){                                 // лише доповнення
-      useSnap(d.merged);
-      toast('Об’єднано без розбіжностей');
-      dirty=true; sync(); done(); return;
+    if(c){
+      /* Є в базі — беремо звідти, локальну чернетку відкидаємо:
+         вона застаріла й більше не потрібна. */
+      useSnap(snapOfCard(c));
+      dropDraft(sn);
+      dirty=true; done(); return;
     }
-    conflictDlg(d,loc,srv,done);                             // потрібне рішення
-  }).catch(function(){
-    if(loc){ useSnap(loc); toast('Сервер недоступний — локальна копія'); }
+    /* У базі немає — можливо, картку почали заповнювати офлайн. */
+    if(draft){ useSnap(draft); toast('Незбережена чернетка з цього пристрою'); }
+    dirty=true; done();
+  }).catch(function(e){
+    if(e==='auth') return;
+    if(draft){ useSnap(draft); toast('Сервер недоступний — чернетка з пристрою'); }
     dirty=true; done();
   });
+}
+
+/* Чернетка більше не потрібна, коли дані вже в базі. */
+function dropDraft(sn){
+  try{ localStorage.removeItem('dc:'+sn); }catch(e){}
 }
 
 /* ── діалог вибору при розбіжностях ──────────────────────────── */
@@ -2382,6 +2464,7 @@ function fromJson(f){
 }
 function showScan(){
   stopCam(); $('#card').hidden=true; $('#scanBlk').hidden=false;
+  $('#savebar').hidden=true;
   setTimeout(function(){ var e=$('#sn0'); if(e) e.focus(); },30);
 }
 
@@ -2421,7 +2504,36 @@ $('#photoCam').onchange=function(){
   if(this.files&&this.files.length) addPhotos(this.files);
   this.value='';
 };
-$('#bScan').onclick=showScan;
+$('#bSave').onclick=function(){ sync(); };
+
+/* Попередження про незбережені зміни — і при закритті вкладки,
+   і при переході в реєстр чи виході. */
+window.addEventListener('beforeunload',function(e){
+  if(!unsaved||!S.sn) return;
+  e.preventDefault(); e.returnValue='';
+});
+[].forEach.call(document.querySelectorAll('header a[href="/list"],header a[href="/logout"]'),
+  function(a){
+    a.addEventListener('click',function(e){
+      if(!unsaved||!S.sn) return;
+      e.preventDefault();
+      if(confirm('Є незбережені зміни. Зберегти перед виходом?')){
+        sync().then(function(){ location.href=a.getAttribute('href'); });
+      } else {
+        unsaved=false;                    /* свідома відмова */
+        location.href=a.getAttribute('href');
+      }
+    });
+  });
+$('#bScan').onclick=function(){
+  if(unsaved&&S.sn){
+    if(confirm('Є незбережені зміни. Зберегти перед скануванням іншої картки?')){
+      sync().then(showScan); return;
+    }
+    unsaved=false;
+  }
+  showScan();
+};
 $('#bPrint').onclick=printNow;
 $('#bShare').onclick=shareDlg;
 
