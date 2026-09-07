@@ -216,6 +216,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .torch svg{width:20px;height:20px}
 .torch.on{background:var(--khaki);border-color:var(--khaki);color:var(--khaki-ink)}
 .torch.on svg{fill:currentColor}
+.diagbtn{font-size:12px;color:var(--faded);height:32px}
 .campick{display:flex;flex-wrap:wrap;gap:var(--gap)}
 .campick .opt{flex:1 1 auto;min-width:0;justify-content:center;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-size:12.5px;
@@ -499,6 +500,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
         <button class="btn" id="bFile"><svg><use href="#i-file"/></svg>QR з файлу</button>
         <button class="btn" id="bOpen"><svg><use href="#i-file"/></svg>Файл картки</button>
       </div>
+      <button class="btn diagbtn" id="bDiag" type="button">Діагностика сканера</button>
       <input type="file" id="file" accept="image/*" hidden>
       <input type="file" id="json" accept="application/json,.json" hidden>
   <input type="file" id="photoIn" accept="image/*" multiple hidden>
@@ -912,16 +914,106 @@ var QR=(function(){
     return cross>0?{a:corner,b:p1,c:p2}:{a:corner,b:p2,c:p1};
   }
 
-  function sample(b,o,size){
+  /* Гомографія: 4 пари точок -> матриця 3x3 (як у стандарті).
+     Розв'язуємо 8x8 методом Гаусса. */
+  function homography(src,dst){
+    var A=[],i;
+    for(i=0;i<4;i++){
+      var sx=src[i][0],sy=src[i][1],dx=dst[i][0],dy=dst[i][1];
+      A.push([sx,sy,1,0,0,0,-sx*dx,-sy*dx,dx]);
+      A.push([0,0,0,sx,sy,1,-sx*dy,-sy*dy,dy]);
+    }
+    for(i=0;i<8;i++){
+      /* частковий вибір головного елемента */
+      var piv=i;
+      for(var r2=i+1;r2<8;r2++) if(Math.abs(A[r2][i])>Math.abs(A[piv][i])) piv=r2;
+      if(Math.abs(A[piv][i])<1e-9) return null;
+      var tmp=A[i]; A[i]=A[piv]; A[piv]=tmp;
+      var d=A[i][i];
+      for(var c2=i;c2<9;c2++) A[i][c2]/=d;
+      for(var r3=0;r3<8;r3++){
+        if(r3===i) continue;
+        var f=A[r3][i];
+        if(!f) continue;
+        for(var c3=i;c3<9;c3++) A[r3][c3]-=f*A[i][c3];
+      }
+    }
+    return [A[0][8],A[1][8],A[2][8],A[3][8],A[4][8],A[5][8],A[6][8],A[7][8],1];
+  }
+  function applyH(H,x,y){
+    var d=H[6]*x+H[7]*y+H[8];
+    if(!d) d=1e-9;
+    return [(H[0]*x+H[1]*y+H[2])/d,(H[3]*x+H[4]*y+H[5])/d];
+  }
+
+  /* Пошук вирівнювального патерна біля очікуваної точки.
+     Це 5x5 квадрат: чорний-білий-чорний у центрі. */
+  function findAlign(b,ex,ey,mu){
+    var bits=b.bits,w=b.w,h=b.h,hits=[],tol=mu*0.75;
+    /* Оцінка позиції з паралелограма промахується тим більше,
+       чим сильніший нахил — тому шукаємо в широкому радіусі. */
+    var rad=Math.max(6,Math.round(mu*7));
+
+    /* Довжина однотонної смуги від (x,y) у напрямку (dx,dy).
+       Повертає [довжина, наступна координата за смугою]. */
+    function run(x,y,dx,dy,want){
+      var k=0;
+      while(x>=0&&y>=0&&x<w&&y<h&&bits[y*w+x]===want){ k++; x+=dx; y+=dy; }
+      return [k,x,y];
+    }
+
+    for(var y=Math.max(1,Math.round(ey-rad));y<Math.min(h-1,ey+rad);y++){
+      for(var x=Math.max(1,Math.round(ex-rad));x<Math.min(w-1,ex+rad);x++){
+        if(!bits[y*w+x]) continue;              /* центр має бути чорним */
+
+        /* горизонталь: чорне ядро, білі кільця, зовнішнє чорне */
+        var L=run(x,y,-1,0,1),R=run(x+1,y,1,0,1);
+        if(Math.abs(L[0]+R[0]-mu)>tol) continue;
+        var WL=run(L[1],L[2],-1,0,0),WR=run(R[1],R[2],1,0,0);
+        if(Math.abs(WL[0]-mu)>tol||Math.abs(WR[0]-mu)>tol) continue;
+        /* Зовнішнє кільце має бути чорним, але його довжину не звіряємо:
+           до патерна впритул можуть прилягати темні модулі даних. */
+        var BL=run(WL[1],WL[2],-1,0,1),BR=run(WR[1],WR[2],1,0,1);
+        if(BL[0]<1||BR[0]<1) continue;
+
+        /* вертикаль так само */
+        var U=run(x,y,0,-1,1),D=run(x,y+1,0,1,1);
+        if(Math.abs(U[0]+D[0]-mu)>tol) continue;
+        var WU=run(U[1],U[2],0,-1,0),WD=run(D[1],D[2],0,1,0);
+        if(Math.abs(WU[0]-mu)>tol||Math.abs(WD[0]-mu)>tol) continue;
+        var BU=run(WU[1],WU[2],0,-1,1),BD=run(WD[1],WD[2],0,1,1);
+        if(BU[0]<1||BD[0]<1) continue;
+
+        /* Центр ядра, а не перший підхожий піксель: інакше промах
+           на пів модуля ламає гомографію. */
+        var ccx=x+(R[0]-L[0])/2,ccy=y+(D[0]-U[0])/2;
+        var dist=(ccx-ex)*(ccx-ex)+(ccy-ey)*(ccy-ey);
+        hits.push({x:ccx,y:ccy,d:dist});
+      }
+    }
+    /* Кластеризуємо сусідні пікселі одного патерна і повертаємо
+       кілька найближчих кандидатів — правильний вибере той, хто
+       зможе прочитати код. */
+    var cl=[];
+    hits.sort(function(p,q){ return p.d-q.d; });
+    for(var i=0;i<hits.length;i++){
+      var p2=hits[i],near=false;
+      for(var j=0;j<cl.length;j++)
+        if(Math.abs(cl[j].x-p2.x)<mu&&Math.abs(cl[j].y-p2.y)<mu){ near=true; break; }
+      if(!near) cl.push(p2);
+      if(cl.length>=6) break;
+    }
+    return cl;
+  }
+
+  /* Семплінг за гомографією (H відображає модульні координати в пікселі). */
+  function sampleH(b,H,size){
     var m=[],bits=b.bits,w=b.w,h=b.h,r,c;
-    var ax=o.a.x,ay=o.a.y,n=size-7,
-        ux=(o.b.x-o.a.x)/n,uy=(o.b.y-o.a.y)/n,
-        vx=(o.c.x-o.a.x)/n,vy=(o.c.y-o.a.y)/n;
     for(r=0;r<size;r++){
       m[r]=[];
       for(c=0;c<size;c++){
-        var fx=ax+(c-3)*ux+(r-3)*vx,fy=ay+(c-3)*uy+(r-3)*vy;
-        var x=Math.round(fx),y=Math.round(fy);
+        var pt=applyH(H,c+0.5,r+0.5);
+        var x=Math.round(pt[0]),y=Math.round(pt[1]);
         if(x<0||y<0||x>=w||y>=h){ m[r][c]=0; continue; }
         var on=0,tot=0,dx,dy;
         for(dy=-1;dy<=1;dy++) for(dx=-1;dx<=1;dx++){
@@ -932,6 +1024,17 @@ var QR=(function(){
       }
     }
     return m;
+  }
+
+  /* Афінний варіант — коли вирівнювального патерна немає (версія 1). */
+  function sample(b,o,size){
+    var n=size-7;
+    var H=homography(
+      [[3.5,3.5],[size-3.5,3.5],[3.5,size-3.5],[size-3.5,size-3.5]],
+      [[o.a.x,o.a.y],[o.b.x,o.b.y],[o.c.x,o.c.y],
+       [o.b.x+o.c.x-o.a.x,o.b.y+o.c.y-o.a.y]]);
+    if(!H) return null;
+    return sampleH(b,H,size);
   }
 
   function readFormat(m,size){
@@ -1076,15 +1179,20 @@ var QR=(function(){
     return out||null;
   }
 
-  /* Читання за фіксованою сіткою (з можливим зсувом центрів). */
-  function readGrid(b,o,size,ver){
-    var m=sample(b,o,size),fmt=readFormat(m,size);
+  /* Спроба прочитати вже відсемпльовану матрицю. */
+  function readMatrix(m,size,ver){
+    if(!m) return null;
+    var fmt=readFormat(m,size);
     if(!fmt) return null;
     var cw=readCw(unmask(m,size,ver,fmt.mask),size,ver);
     if(cw.length<dataCw(ver)) return null;
     var data=deinterleave(cw,ver);
     if(!data) return null;
     return decodeBits(data,ver);
+  }
+  /* Читання за афінною сіткою. */
+  function readGrid(b,o,size,ver){
+    return readMatrix(sample(b,o,size),size,ver);
   }
 
   /* Спроба зчитати код за конкретною трійкою патернів. */
@@ -1104,10 +1212,30 @@ var QR=(function(){
     if(size<21||size>177) return null;
     var ver=(size-17)/4;
 
-    /* Розмиття зміщує центри на ~1px; на дальньому куті це виходить
-       за пів модуля. Пробуємо дрібні зсуви сітки. */
+    /* Спершу — з 4-м орієнтиром (вирівнювальний патерн). Саме він
+       дає правильну геометрію, коли кадр знято під кутом. */
+    var corners=[[3.5,3.5],[size-3.5,3.5],[3.5,size-3.5]];
+    if(ver>=2){
+      var ap=alignPos(ver),am=ap[ap.length-1]+0.5;   /* центр нижнього-правого */
+      /* очікувана позиція за паралелограмом */
+      var gx=o.b.x+o.c.x-o.a.x,gy=o.b.y+o.c.y-o.a.y;
+      /* трохи ближче до центру: патерн стоїть на 3 модулі всередину */
+      var back=(size-3.5-am)/(size-7);
+      gx-=(dx+ex)*back; gy-=(dy+ey)*back;
+      var cands=findAlign(b,gx,gy,mu);
+      for(var ci=0;ci<cands.length;ci++){
+        var al=cands[ci];
+        var H=homography(corners.concat([[am,am]]),
+          [[o.a.x,o.a.y],[o.b.x,o.b.y],[o.c.x,o.c.y],[al.x,al.y]]);
+        if(!H) continue;
+        var r1=readMatrix(sampleH(b,H,size),size,ver);
+        if(r1) return r1;
+      }
+    }
+    /* Без орієнтира — звичайна (афінна) сітка. */
     var r=readGrid(b,o,size,ver);
     if(r) return r;
+    /* Дрібні зсуви — рятують за розмиття. */
     var step=mu*0.25,d;
     for(d=0;d<8;d++){
       var ang=d*Math.PI/4,
@@ -1116,17 +1244,6 @@ var QR=(function(){
               b:{x:o.b.x+sx,y:o.b.y+sy,mu:o.b.mu},
               c:{x:o.c.x+sx,y:o.c.y+sy,mu:o.c.mu}};
       r=readGrid(b,o2,size,ver);
-      if(r) return r;
-    }
-    /* А також невелике «розтягування» сітки — коли центри зійшлись
-       трохи ближче/далі, ніж насправді. */
-    for(d=-2;d<=2;d++){
-      if(!d) continue;
-      var k=1+d*0.01;
-      var o3={a:{x:o.a.x,y:o.a.y,mu:o.a.mu},
-              b:{x:o.a.x+dx*k,y:o.a.y+dy*k,mu:o.b.mu},
-              c:{x:o.a.x+ex*k,y:o.a.y+ey*k,mu:o.c.mu}};
-      r=readGrid(b,o3,size,ver);
       if(r) return r;
     }
     return null;
@@ -1992,6 +2109,8 @@ function accept(v){
   return true;
 }
 var camList=[],camIdx=0,scanCv=null,scanCx=null,lastScan=0;
+/* Діагностика сканера — показується кнопкою «Діагностика». */
+var DIAG={frames:0,err:'',lum:null,lastText:'',engine:''};
 
 /* Список доступних камер. Мітки доступні лише після дозволу. */
 async function listCams(){
@@ -2123,25 +2242,48 @@ async function scanFrame(){
     }catch(e){ /* якщо детектор зламався — падаємо на власний */ }
   }
 
-  /* Власний декодер (Safari/iOS). Зменшуємо кадр до ~480px по довгій
-     стороні: цього досить для QR і значно швидше. */
-  if(!scanCv){ scanCv=document.createElement('canvas'); scanCx=scanCv.getContext('2d',{willReadFrequently:true}); }
+  /* Власний декодер (Safari/iOS). Зменшуємо кадр: цього досить для QR
+     і значно швидше. БЕЗ willReadFrequently — на iOS цей прапорець
+     перемикає Safari у програмний рендеринг і drawImage(video) може
+     дати порожній канвас. */
+  if(!scanCv){
+    scanCv=document.createElement('canvas');
+    scanCx=scanCv.getContext('2d');
+  }
   var vw=v.videoWidth,vh=v.videoHeight,k=Math.min(1,640/Math.max(vw,vh));
   var w=Math.round(vw*k),h=Math.round(vh*k);
   if(scanCv.width!==w||scanCv.height!==h){ scanCv.width=w; scanCv.height=h; }
-  scanCx.drawImage(v,0,0,w,h);
+  try{ scanCx.drawImage(v,0,0,w,h); }
+  catch(e){ DIAG.err='drawImage: '+e.name; return false; }
+
   /* Спершу центральний квадрат (там, де рамка), потім увесь кадр. */
   var side=Math.round(Math.min(w,h)*0.8),
       sx=Math.round((w-side)/2),sy=Math.round((h-side)/2);
   var tries=[[sx,sy,side,side],[0,0,w,h]];
+  DIAG.frames++;
   for(var i=0;i<tries.length;i++){
     var t=tries[i],img;
-    try{ img=scanCx.getImageData(t[0],t[1],t[2],t[3]); }catch(e){ continue; }
+    try{ img=scanCx.getImageData(t[0],t[1],t[2],t[3]); }
+    catch(e){ DIAG.err='getImageData: '+e.name; continue; }
+    /* Порожній/чорний кадр — типова ознака проблеми з канвасом на iOS */
+    if(i===0) DIAG.lum=frameLum(img);
     var txt=null;
-    try{ txt=QR.decode(img); }catch(e){}
-    if(txt&&accept(txt)) return true;
+    try{ txt=QR.decode(img); }
+    catch(e){ DIAG.err='decode: '+(e&&e.message||e); }
+    if(txt){ DIAG.lastText=txt; if(accept(txt)) return true; }
   }
   return false;
+}
+
+/* Середня яскравість + розкид: показує, чи кадр реально захоплено. */
+function frameLum(img){
+  var d=img.data,n=d.length/4,step=Math.max(1,Math.floor(n/2000)),
+      sum=0,mn=255,mx=0,cnt=0;
+  for(var i=0;i<n;i+=step){
+    var g=d[i*4];
+    sum+=g; if(g<mn) mn=g; if(g>mx) mx=g; cnt++;
+  }
+  return {avg:Math.round(sum/cnt),min:mn,max:mx};
 }
 
 function scanLoop(){
@@ -2226,6 +2368,23 @@ function showScan(){
 $('#bStart').onclick=startCam;
 $('#zoom').oninput=function(){ setZoom(+this.value); };
 $('#bTorch').onclick=toggleTorch;
+$('#bDiag').onclick=function(){
+  var v=$('#vid'),t=camTrack(),st=t&&t.getSettings?t.getSettings():{};
+  var lines=[
+    'BarcodeDetector: '+(hasDet()?'є (нативний)':'немає -> власний декодер'),
+    'Відео: '+(v&&v.videoWidth?v.videoWidth+'x'+v.videoHeight:'немає кадру'),
+    'Потік: '+(st.width?st.width+'x'+st.height:'—')+
+      (st.frameRate?' @'+Math.round(st.frameRate)+'fps':''),
+    'Кадрів оброблено: '+DIAG.frames,
+    'Яскравість кадру: '+(DIAG.lum?
+      ('сер '+DIAG.lum.avg+', від '+DIAG.lum.min+' до '+DIAG.lum.max+
+       (DIAG.lum.max-DIAG.lum.min<20?'  ⚠ КАДР ПОРОЖНІЙ':'')):'—'),
+    'Останній текст: '+(DIAG.lastText?DIAG.lastText.slice(0,40):'—'),
+    'Помилка: '+(DIAG.err||'немає'),
+    'Протокол: '+location.protocol+(location.protocol==='https:'?'':'  ⚠ потрібен https')
+  ];
+  alert(lines.join('\n'));
+};
 $('#bFile').onclick=function(){ $('#file').click(); };
 $('#file').onchange=function(){ if(this.files[0]) fromFile(this.files[0]); this.value=''; };
 $('#bOpen').onclick=function(){ $('#json').click(); };
