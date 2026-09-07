@@ -528,6 +528,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 <div id="toast"></div>
 
 <script src="/models.js"></script>
+<script src="/jsqr.js"></script>
 <script>
 /* ── QR: byte mode, рівень M, версії 1..40 ── */
 var QR=(function(){
@@ -1726,7 +1727,7 @@ function save(){
   markUnsaved();
 }
 function markUnsaved(){
-  if(!dirty||!S.sn) return;
+  if(!S.sn||loading) return;   /* під час завантаження картки зміни не наші */
   unsaved=true; refreshSaveBtn();
 }
 function keepDraft(){
@@ -1864,7 +1865,7 @@ function viewPhoto(i){
 /* Запис на сервер увімкнено лише після того, як для цього S/N
    вирішено конфлікт (або його не було). Доки dirty=false —
    локальні зміни на сервер не йдуть і нічого там не перетирають. */
-var syncT=0,dirty=false,unsaved=false,saving=false;
+var syncT=0,dirty=false,unsaved=false,saving=false,loading=false;
 function online(){ return /^https?:$/.test(location.protocol); }
 
 /* Знімок стану у форматі, який приймає сервер. */
@@ -1900,6 +1901,7 @@ function useSnap(n){
 /* Явне збереження в базу. Повертає проміс, щоб інші дії
    (друк, перехід до реєстру) могли дочекатись запису. */
 function sync(){
+  if(loading) return Promise.resolve(false);
   if(!S.sn){ toast('Спершу вкажіть серійний номер'); return Promise.resolve(false); }
   if(!online()){ toast('Немає зв’язку — збережено як чернетку'); return Promise.resolve(false); }
   if(saving) return Promise.resolve(false);
@@ -2076,7 +2078,7 @@ function shareDlg(){
 /* Викликається при скануванні / відкритті S/N. Доки не вирішено,
    що робити з розбіжностями, dirty=false і на сервер нічого не йде. */
 function loadCard(sn,done){
-  dirty=false;
+  dirty=false; loading=true; unsaved=false;
   if(S.sn!==sn) S.photos=[];   /* інша картка — чужі фото не переносимо */
 
   /* Чернетка з цього пристрою — лише для випадку, коли сервера немає.
@@ -2085,9 +2087,11 @@ function loadCard(sn,done){
   try{ var q=localStorage.getItem('dc:'+sn); if(q) draft=snapOf(q,S.photos||[]); }catch(e){}
   if(draft) draft.sn=sn;
 
+  function finish(){ loading=false; refreshSaveBtn(); done(); }
+
   if(!online()){
-    if(draft){ useSnap(draft); toast('Чернетка з цього пристрою'); }
-    dirty=true; done(); return;
+    if(draft){ useSnap(draft); toast('Чернетка з цього пристрою'); unsaved=true; }
+    dirty=true; finish(); return;
   }
 
   fetch('/api/cards?sn='+encodeURIComponent(sn)).then(function(r){
@@ -2101,15 +2105,15 @@ function loadCard(sn,done){
          вона застаріла й більше не потрібна. */
       useSnap(snapOfCard(c));
       dropDraft(sn);
-      dirty=true; done(); return;
+      dirty=true; finish(); return;
     }
     /* У базі немає — можливо, картку почали заповнювати офлайн. */
-    if(draft){ useSnap(draft); toast('Незбережена чернетка з цього пристрою'); }
-    dirty=true; done();
+    if(draft){ useSnap(draft); toast('Незбережена чернетка з цього пристрою'); unsaved=true; }
+    dirty=true; finish();
   }).catch(function(e){
-    if(e==='auth') return;
-    if(draft){ useSnap(draft); toast('Сервер недоступний — чернетка з пристрою'); }
-    dirty=true; done();
+    if(e==='auth'){ loading=false; return; }
+    if(draft){ useSnap(draft); toast('Сервер недоступний — чернетка з пристрою'); unsaved=true; }
+    dirty=true; finish();
   });
 }
 
@@ -2344,14 +2348,17 @@ async function scanFrame(){
     try{
       det=det||mkDet();
       var r=await det.detect(v);
-      if(r&&r.length&&accept(r[0].rawValue)) return true;
-      return false;
-    }catch(e){ /* якщо детектор зламався — падаємо на власний */ }
+      if(r&&r.length){
+        DIAG.engine='BarcodeDetector';
+        DIAG.lastText=r[0].rawValue;
+        if(accept(r[0].rawValue)) return true;
+      }
+      /* нічого не знайшов — пробуємо решту рушіїв нижче */
+    }catch(e){ DIAG.err='BarcodeDetector: '+(e&&e.message||e); }
   }
 
-  /* Власний декодер (Safari/iOS). БЕЗ willReadFrequently — на iOS цей
-     прапорець перемикає Safari у програмний рендеринг і drawImage(video)
-     може дати порожній канвас. */
+  /* БЕЗ willReadFrequently — на iOS цей прапорець перемикає Safari
+     у програмний рендеринг і drawImage(video) може дати порожній канвас. */
   if(!scanCv){
     scanCv=document.createElement('canvas');
     scanCx=scanCv.getContext('2d');
@@ -2360,35 +2367,52 @@ async function scanFrame(){
   if(!vw||!vh) return false;
   DIAG.frames++;
 
-  /* Проходи від вужчого до ширшого. Вужчий зберігає роздільність
-     (дрібний QR!), ширший ловить код, що не потрапив у центр.
-     MAXBUF обмежує обсяг пікселів, а не масштаб кадру. */
-  var MAXBUF=760,
-      side=Math.min(vw,vh),
-      passes=[0.5,0.75,1.0];
+  /* Заводські наліпки DJI мають дуже дрібний щільний QR. У кадрі він
+     може займати менше 2 пікселів на модуль — тоді жоден декодер його
+     не візьме «як є». Рятує вирізання центру та ЗБІЛЬШЕННЯ: інтерполяція
+     відновлює краї модулів. Тому йдемо від найтіснішого вирізу (найбільше
+     збільшення) до повного кадру. */
+  var side=Math.min(vw,vh),
+      passes=[[0.3,2.5],[0.55,1.8],[1.0,1]];
   DIAG.passes=0;
 
   for(var i=0;i<passes.length;i++){
-    var frac=passes[i],
-        rw=Math.round((frac===1.0?vw:side*frac)),
-        rh=Math.round((frac===1.0?vh:side*frac)),
-        rx=Math.round((vw-rw)/2),ry=Math.round((vh-rh)/2);
-    /* масштабуємо лише якщо ділянка більша за буфер */
-    var k=Math.min(1,MAXBUF/Math.max(rw,rh)),
-        dw=Math.max(1,Math.round(rw*k)),dh=Math.max(1,Math.round(rh*k));
+    var frac=passes[i][0],zoom=passes[i][1],
+        rw=Math.round(frac===1?vw:side*frac),
+        rh=Math.round(frac===1?vh:side*frac),
+        rx=Math.round((vw-rw)/2),ry=Math.round((vh-rh)/2),
+        dw=Math.round(rw*zoom),dh=Math.round(rh*zoom);
+    /* не роздуваємо буфер понад розумне */
+    var cap=Math.min(1,900/Math.max(dw,dh));
+    dw=Math.max(1,Math.round(dw*cap)); dh=Math.max(1,Math.round(dh*cap));
     if(scanCv.width!==dw||scanCv.height!==dh){ scanCv.width=dw; scanCv.height=dh; }
-    try{ scanCx.drawImage(v,rx,ry,rw,rh,0,0,dw,dh); }
-    catch(e){ DIAG.err='drawImage: '+e.name; return false; }
+    try{
+      scanCx.imageSmoothingEnabled=true;
+      scanCx.imageSmoothingQuality='high';
+      scanCx.drawImage(v,rx,ry,rw,rh,0,0,dw,dh);
+    }catch(e){ DIAG.err='drawImage: '+e.name; return false; }
     var img;
     try{ img=scanCx.getImageData(0,0,dw,dh); }
     catch(e){ DIAG.err='getImageData: '+e.name; continue; }
     if(i===0){ DIAG.lum=frameLum(img); DIAG.res=dw+'x'+dh+' з '+rw+'x'+rh; }
     DIAG.passes++;
+
+    /* jsQR — основний рушій: перевірений на реальних наліпках. */
+    if(window.jsQR){
+      var jr=null;
+      try{ jr=window.jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'}); }
+      catch(e){ DIAG.err='jsQR: '+(e&&e.message||e); }
+      if(jr&&jr.data){
+        DIAG.engine='jsQR'; DIAG.lastText=jr.data;
+        if(accept(jr.data)) return true;
+      }
+    }
+    /* Запасний — власний декодер. */
     var txt=null;
     try{ txt=QR.decode(img); }
     catch(e){ DIAG.err='decode: '+(e&&e.message||e); }
-    if(QR.lastMu) DIAG.ppm=QR.lastMu.toFixed(1)+(QR.lastMu<3?'  ⚠ замало, підійдіть ближче':'');
-    if(txt){ DIAG.lastText=txt; if(accept(txt)) return true; }
+    if(QR.lastMu) DIAG.ppm=QR.lastMu.toFixed(1);
+    if(txt){ DIAG.engine='вбудований'; DIAG.lastText=txt; if(accept(txt)) return true; }
   }
   return false;
 }
@@ -2490,7 +2514,9 @@ $('#bTorch').onclick=toggleTorch;
 $('#bDiag').onclick=function(){
   var v=$('#vid'),t=camTrack(),st=t&&t.getSettings?t.getSettings():{};
   var lines=[
-    'BarcodeDetector: '+(hasDet()?'є (нативний)':'немає -> власний декодер'),
+    'BarcodeDetector: '+(hasDet()?'є (нативний)':'немає'),
+    'jsQR: '+(window.jsQR?'завантажено':'⚠ НЕ ЗАВАНТАЖЕНО'),
+    'Спрацював рушій: '+(DIAG.engine||'—'),
     'Відео: '+(v&&v.videoWidth?v.videoWidth+'x'+v.videoHeight:'немає кадру'),
     'Потік: '+(st.width?st.width+'x'+st.height:'—')+
       (st.frameRate?' @'+Math.round(st.frameRate)+'fps':'')+

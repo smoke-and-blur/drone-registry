@@ -67,6 +67,7 @@ func main() {
 	http.HandleFunc("/logout", handleLogout)
 	http.HandleFunc("/api/cards", guard(apiCards))
 	http.HandleFunc("/models.js", guard(page("models.js")))
+	http.HandleFunc("/jsqr.js", guard(page("jsqr.js")))
 	http.HandleFunc("/list", guard(page("list.html")))
 	http.HandleFunc("/", guard(page("damage-card.html")))
 

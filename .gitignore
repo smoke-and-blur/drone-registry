@@ -1,3 +1,8 @@
 .env
 drone-registry
 drone-registry.exe
+
+# фото для налагодження, не частина застосунку
+image.png
+image copy.png
+node_modules/
