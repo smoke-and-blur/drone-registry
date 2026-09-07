@@ -2299,8 +2299,14 @@ var DIAG={frames:0,err:'',lum:null,lastText:'',engine:'',camErr:'',res:'',ppm:''
 async function listCams(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.enumerateDevices) return [];
   try{
-    var d=await navigator.mediaDevices.enumerateDevices();
-    return d.filter(function(x){ return x.kind==='videoinput'; });
+    var d=await navigator.mediaDevices.enumerateDevices(),
+        cams=d.filter(function(x){ return x.kind==='videoinput'; });
+    /* Фронтальні камери для сканування наліпок не потрібні. Мітки
+       з'являються лише після дозволу; якщо їх немає — лишаємо все. */
+    var back=cams.filter(function(c){
+      return !/front|фронт|selfie|user|face/i.test(c.label||'');
+    });
+    return back.length?back:cams;
   }catch(e){ return []; }
 }
 
@@ -2330,13 +2336,15 @@ function renderCamPick(){
 /* Лише ideal-обмеження: будь-яке невідоме браузеру поле поза advanced
    змушує Safari відхилити весь запит. focusMode кладемо в advanced —
    там незнані поля ігноруються, а не ламають запит. */
-function camConstraints(res){
-  var v={width:{ideal:res||1920},height:{ideal:Math.round((res||1920)*9/16)},
-         frameRate:{ideal:30},
-         advanced:[{focusMode:'continuous'}]};
-  if(camList.length&&camList[camIdx]&&camList[camIdx].deviceId)
+function camConstraints(){
+  var v={facingMode:{ideal:'environment'},
+         width:{ideal:1280},height:{ideal:720}};
+  /* Обрана камера, якщо користувач її вибрав. ideal, а не exact:
+     застарілий id має погіршувати вибір, а не ламати запуск. */
+  if(camList.length&&camList[camIdx]&&camList[camIdx].deviceId){
     v.deviceId={ideal:camList[camIdx].deviceId};
-  else v.facingMode={ideal:'environment'};
+    delete v.facingMode;
+  }
   return {video:v};
 }
 
@@ -2347,14 +2355,10 @@ async function restartCam(){
 }
 
 async function startStream(){
-  /* Від найкращого до найпростішого: кожен крок усе одно просить
-     високу роздільність, бо саме вона вирішує, чи прочитається QR. */
-  var tries=[camConstraints(1920),camConstraints(1280),
-             {video:{facingMode:{ideal:'environment'},
-                     width:{ideal:1920},height:{ideal:1080}}},
-             {video:{facingMode:'environment'}},
-             {video:true}];
   stream=null;
+  var tries=[camConstraints(),
+             {video:{facingMode:{ideal:'environment'}}},
+             {video:true}];
   for(var i=0;i<tries.length&&!stream;i++){
     try{ stream=await navigator.mediaDevices.getUserMedia(tries[i]); }
     catch(e){ DIAG.camErr=e.name+' (варіант '+(i+1)+')'; }
@@ -2364,21 +2368,11 @@ async function startStream(){
     $('#camoff').textContent='Немає доступу до камери. Потрібен https або localhost.';
     return false;
   }
-  var v=$('#vid'); v.srcObject=stream;
-  v.setAttribute('playsinline','');   /* iOS: не відкривати на весь екран */
-  v.setAttribute('autoplay','');
+  var v=$('#vid');
+  v.srcObject=stream;
+  v.setAttribute('playsinline','');   /* iOS: не на весь екран */
   v.muted=true;
   try{ await v.play(); }catch(e){}
-
-  /* Якщо камера дала менше, ніж просили — пробуємо підняти вже на треку. */
-  var t=camTrack();
-  if(t&&t.applyConstraints){
-    var st=t.getSettings?t.getSettings():{};
-    if((st.width||0)<1280){
-      try{ await t.applyConstraints({width:{ideal:1920},height:{ideal:1080}}); }catch(e){}
-    }
-    try{ await t.applyConstraints({advanced:[{focusMode:'continuous'}]}); }catch(e){}
-  }
   applyZoom();
   torchOn=false; refreshTorch();
   scanLoop();
@@ -2440,21 +2434,23 @@ async function scanFrame(){
   var v=$('#vid');
   if(!v||!v.videoWidth) return false;
 
+  /* 1. Штатний детектор браузера — найшвидший і найнадійніший
+     (саме він працює на Android). */
   if(hasDet()){
     try{
       det=det||mkDet();
       var r=await det.detect(v);
-      if(r&&r.length){
+      if(r&&r.length&&r[0].rawValue){
         DIAG.engine='BarcodeDetector';
         DIAG.lastText=r[0].rawValue;
-        if(accept(r[0].rawValue)) return true;
+        return accept(r[0].rawValue);
       }
-      /* нічого не знайшов — пробуємо решту рушіїв нижче */
+      return false;          /* детектор є — інших рушіїв не потрібно */
     }catch(e){ DIAG.err='BarcodeDetector: '+(e&&e.message||e); }
   }
 
-  /* БЕЗ willReadFrequently — на iOS цей прапорець перемикає Safari
-     у програмний рендеринг і drawImage(video) може дати порожній канвас. */
+  /* 2. Запасний шлях для Safari/iOS, де BarcodeDetector відсутній. */
+  if(!window.jsQR) return false;
   if(!scanCv){
     scanCv=document.createElement('canvas');
     scanCx=scanCv.getContext('2d');
@@ -2463,52 +2459,22 @@ async function scanFrame(){
   if(!vw||!vh) return false;
   DIAG.frames++;
 
-  /* Заводські наліпки DJI мають дуже дрібний щільний QR. У кадрі він
-     може займати менше 2 пікселів на модуль — тоді жоден декодер його
-     не візьме «як є». Рятує вирізання центру та ЗБІЛЬШЕННЯ: інтерполяція
-     відновлює краї модулів. Тому йдемо від найтіснішого вирізу (найбільше
-     збільшення) до повного кадру. */
-  var side=Math.min(vw,vh),
-      passes=[[0.3,2.5],[0.55,1.8],[1.0,1]];
-  DIAG.passes=0;
+  var k=Math.min(1,900/Math.max(vw,vh)),
+      dw=Math.max(1,Math.round(vw*k)),dh=Math.max(1,Math.round(vh*k));
+  if(scanCv.width!==dw||scanCv.height!==dh){ scanCv.width=dw; scanCv.height=dh; }
+  try{ scanCx.drawImage(v,0,0,dw,dh); }
+  catch(e){ DIAG.err='drawImage: '+e.name; return false; }
+  var img;
+  try{ img=scanCx.getImageData(0,0,dw,dh); }
+  catch(e){ DIAG.err='getImageData: '+e.name; return false; }
+  DIAG.lum=frameLum(img); DIAG.res=dw+'x'+dh;
 
-  for(var i=0;i<passes.length;i++){
-    var frac=passes[i][0],zoom=passes[i][1],
-        rw=Math.round(frac===1?vw:side*frac),
-        rh=Math.round(frac===1?vh:side*frac),
-        rx=Math.round((vw-rw)/2),ry=Math.round((vh-rh)/2),
-        dw=Math.round(rw*zoom),dh=Math.round(rh*zoom);
-    /* не роздуваємо буфер понад розумне */
-    var cap=Math.min(1,900/Math.max(dw,dh));
-    dw=Math.max(1,Math.round(dw*cap)); dh=Math.max(1,Math.round(dh*cap));
-    if(scanCv.width!==dw||scanCv.height!==dh){ scanCv.width=dw; scanCv.height=dh; }
-    try{
-      scanCx.imageSmoothingEnabled=true;
-      scanCx.imageSmoothingQuality='high';
-      scanCx.drawImage(v,rx,ry,rw,rh,0,0,dw,dh);
-    }catch(e){ DIAG.err='drawImage: '+e.name; return false; }
-    var img;
-    try{ img=scanCx.getImageData(0,0,dw,dh); }
-    catch(e){ DIAG.err='getImageData: '+e.name; continue; }
-    if(i===0){ DIAG.lum=frameLum(img); DIAG.res=dw+'x'+dh+' з '+rw+'x'+rh; }
-    DIAG.passes++;
-
-    /* jsQR — основний рушій: перевірений на реальних наліпках. */
-    if(window.jsQR){
-      var jr=null;
-      try{ jr=window.jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'}); }
-      catch(e){ DIAG.err='jsQR: '+(e&&e.message||e); }
-      if(jr&&jr.data){
-        DIAG.engine='jsQR'; DIAG.lastText=jr.data;
-        if(accept(jr.data)) return true;
-      }
-    }
-    /* Запасний — власний декодер. */
-    var txt=null;
-    try{ txt=QR.decode(img); }
-    catch(e){ DIAG.err='decode: '+(e&&e.message||e); }
-    if(QR.lastMu) DIAG.ppm=QR.lastMu.toFixed(1);
-    if(txt){ DIAG.engine='вбудований'; DIAG.lastText=txt; if(accept(txt)) return true; }
+  var jr=null;
+  try{ jr=window.jsQR(img.data,img.width,img.height,{inversionAttempts:'dontInvert'}); }
+  catch(e){ DIAG.err='jsQR: '+(e&&e.message||e); }
+  if(jr&&jr.data){
+    DIAG.engine='jsQR'; DIAG.lastText=jr.data;
+    return accept(jr.data);
   }
   return false;
 }
@@ -2525,21 +2491,15 @@ function frameLum(img){
 }
 
 function scanLoop(){
-  /* Власний декодер важчий за нативний. Робимо паузу між спробами
-     пропорційно до часу останньої — щоб інтерфейс лишався плавним. */
-  var gap=120;
+  var busy=false;
   var tick=async function(){
     if(!stream) return;
-    var now=Date.now();
-    if(now-lastScan>=(hasDet()?0:gap)){
-      lastScan=now;
-      var t0=Date.now(),hit=false;
+    if(!busy){
+      busy=true;
+      var hit=false;
       try{ hit=await scanFrame(); }catch(e){}
+      busy=false;
       if(hit) return;
-      if(!hasDet()){
-        var took=Date.now()-t0;
-        gap=Math.max(60,Math.min(400,Math.round(took*0.8)));
-      }
     }
     raf=requestAnimationFrame(tick);
   };
@@ -2551,6 +2511,7 @@ async function startCam(){
   if(!await startStream()) return;
   /* мітки камер стають доступні лише після дозволу */
   camList=await listCams();
+  if(camIdx>=camList.length) camIdx=0;   /* список міг змінитись */
   var saved=null; try{ saved=localStorage.getItem('dc:cam'); }catch(e){}
   if(saved){
     var k=camList.findIndex?camList.findIndex(function(c){ return c.deviceId===saved; }):-1;
