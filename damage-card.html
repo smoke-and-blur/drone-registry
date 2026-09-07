@@ -1211,6 +1211,7 @@ var QR=(function(){
     var size=Math.round(((d1+d2)/2/mu+7-17)/4)*4+17;
     if(size<21||size>177) return null;
     var ver=(size-17)/4;
+    QR.lastMu=mu;                  /* для діагностики: пікселів на модуль */
 
     /* Спершу — з 4-м орієнтиром (вирівнювальний патерн). Саме він
        дає правильну геометрію, коли кадр знято під кутом. */
@@ -1645,8 +1646,13 @@ function refreshStick(){
 }
 
 /* ── конфіг: URL, файл, друк ─────────────────────────────────── */
+/* QR на стікері несе лише S/N: дані все одно лежать на сервері, а
+   accept() відкриє картку за номером. Це дає 25 модулів замість 49,
+   тобто кожен модуль удвічі більший на тому ж стікері — і дрібний,
+   і потертий код читається значно надійніше.
+   Без сервера (файл на диску) кладемо всю картку, як раніше. */
 function payload(){
-  if(/^https?:$/.test(location.protocol)) return link();
+  if(/^https?:$/.test(location.protocol)) return S.sn||link();
   var o={};
   TEXTF.concat(['model']).forEach(function(k){ if(S[k]) o[k]=S[k]; });
   o.c=[]; for(var k in S.chk){ if(S.chk[k]) o.c.push(k); }
@@ -2145,7 +2151,10 @@ function renderCamPick(){
 }
 
 function camConstraints(){
-  var v={width:{ideal:1280},height:{ideal:720}};
+  var v={width:{ideal:1920},height:{ideal:1080},
+         frameRate:{ideal:30},
+         focusMode:'continuous',
+         advanced:[{focusMode:'continuous'}]};
   if(camList.length&&camList[camIdx]&&camList[camIdx].deviceId)
     v.deviceId={exact:camList[camIdx].deviceId};
   else v.facingMode={ideal:'environment'};
@@ -2242,34 +2251,45 @@ async function scanFrame(){
     }catch(e){ /* якщо детектор зламався — падаємо на власний */ }
   }
 
-  /* Власний декодер (Safari/iOS). Зменшуємо кадр: цього досить для QR
-     і значно швидше. БЕЗ willReadFrequently — на iOS цей прапорець
-     перемикає Safari у програмний рендеринг і drawImage(video) може
-     дати порожній канвас. */
+  /* Власний декодер (Safari/iOS). БЕЗ willReadFrequently — на iOS цей
+     прапорець перемикає Safari у програмний рендеринг і drawImage(video)
+     може дати порожній канвас. */
   if(!scanCv){
     scanCv=document.createElement('canvas');
     scanCx=scanCv.getContext('2d');
   }
-  var vw=v.videoWidth,vh=v.videoHeight,k=Math.min(1,640/Math.max(vw,vh));
-  var w=Math.round(vw*k),h=Math.round(vh*k);
-  if(scanCv.width!==w||scanCv.height!==h){ scanCv.width=w; scanCv.height=h; }
-  try{ scanCx.drawImage(v,0,0,w,h); }
-  catch(e){ DIAG.err='drawImage: '+e.name; return false; }
-
-  /* Спершу центральний квадрат (там, де рамка), потім увесь кадр. */
-  var side=Math.round(Math.min(w,h)*0.8),
-      sx=Math.round((w-side)/2),sy=Math.round((h-side)/2);
-  var tries=[[sx,sy,side,side],[0,0,w,h]];
+  var vw=v.videoWidth,vh=v.videoHeight;
+  if(!vw||!vh) return false;
   DIAG.frames++;
-  for(var i=0;i<tries.length;i++){
-    var t=tries[i],img;
-    try{ img=scanCx.getImageData(t[0],t[1],t[2],t[3]); }
+
+  /* Проходи від вужчого до ширшого. Вужчий зберігає роздільність
+     (дрібний QR!), ширший ловить код, що не потрапив у центр.
+     MAXBUF обмежує обсяг пікселів, а не масштаб кадру. */
+  var MAXBUF=760,
+      side=Math.min(vw,vh),
+      passes=[0.5,0.75,1.0];
+  DIAG.passes=0;
+
+  for(var i=0;i<passes.length;i++){
+    var frac=passes[i],
+        rw=Math.round((frac===1.0?vw:side*frac)),
+        rh=Math.round((frac===1.0?vh:side*frac)),
+        rx=Math.round((vw-rw)/2),ry=Math.round((vh-rh)/2);
+    /* масштабуємо лише якщо ділянка більша за буфер */
+    var k=Math.min(1,MAXBUF/Math.max(rw,rh)),
+        dw=Math.max(1,Math.round(rw*k)),dh=Math.max(1,Math.round(rh*k));
+    if(scanCv.width!==dw||scanCv.height!==dh){ scanCv.width=dw; scanCv.height=dh; }
+    try{ scanCx.drawImage(v,rx,ry,rw,rh,0,0,dw,dh); }
+    catch(e){ DIAG.err='drawImage: '+e.name; return false; }
+    var img;
+    try{ img=scanCx.getImageData(0,0,dw,dh); }
     catch(e){ DIAG.err='getImageData: '+e.name; continue; }
-    /* Порожній/чорний кадр — типова ознака проблеми з канвасом на iOS */
-    if(i===0) DIAG.lum=frameLum(img);
+    if(i===0){ DIAG.lum=frameLum(img); DIAG.res=dw+'x'+dh+' з '+rw+'x'+rh; }
+    DIAG.passes++;
     var txt=null;
     try{ txt=QR.decode(img); }
     catch(e){ DIAG.err='decode: '+(e&&e.message||e); }
+    if(QR.lastMu) DIAG.ppm=QR.lastMu.toFixed(1)+(QR.lastMu<3?'  ⚠ замало, підійдіть ближче':'');
     if(txt){ DIAG.lastText=txt; if(accept(txt)) return true; }
   }
   return false;
@@ -2376,6 +2396,8 @@ $('#bDiag').onclick=function(){
     'Потік: '+(st.width?st.width+'x'+st.height:'—')+
       (st.frameRate?' @'+Math.round(st.frameRate)+'fps':''),
     'Кадрів оброблено: '+DIAG.frames,
+    'Ділянка аналізу: '+(DIAG.res||'—'),
+    'Пікселів на модуль: '+(DIAG.ppm||'—'),
     'Яскравість кадру: '+(DIAG.lum?
       ('сер '+DIAG.lum.avg+', від '+DIAG.lum.min+' до '+DIAG.lum.max+
        (DIAG.lum.max-DIAG.lum.min<20?'  ⚠ КАДР ПОРОЖНІЙ':'')):'—'),
