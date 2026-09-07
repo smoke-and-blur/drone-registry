@@ -177,30 +177,30 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .sheet>*:nth-child(n+2){display:none}
 .stick{background:var(--floor2);border:1px solid var(--seam2);border-radius:8px;
   padding:10px;display:grid;gap:8px;align-content:start;align-self:start}
-.s-top{display:grid;grid-template-columns:1fr minmax(0,auto);gap:8px;align-items:center;height:32px}
-.s-sn{font-family:var(--mono);font-size:30px;font-weight:800;line-height:1;letter-spacing:2px}
+.s-top{display:grid;grid-template-columns:1fr minmax(0,auto);gap:8px;align-items:center;height:40px}
+.s-sn{font-family:var(--mono);font-size:38px;font-weight:800;line-height:1;letter-spacing:1.5px}
 .s-md .st{font-weight:800;letter-spacing:.5px;color:var(--stencil2)}
 .s-md .st.ok{color:var(--khaki)}
-.s-md{font-size:11px;color:var(--faded);text-align:right;line-height:1.35;
+.s-md{font-size:13px;color:var(--faded);text-align:right;line-height:1.3;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.s-who{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;min-height:17px}
+.s-who{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:14px;min-height:19px;font-weight:600}
 .s-who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .s-who .r{text-align:right;color:var(--faded)}
 .s-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .s-list{display:none;flex-wrap:wrap;gap:6px}
 .s-i{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--seam);
-  border-radius:5px;padding:2px 6px;font-size:10.5px}
+  border-radius:5px;padding:3px 7px;font-size:13px;font-weight:600}
 .s-i .box{width:14px;height:14px;min-width:14px;border-radius:4px}
 .s-i.on .box{background:var(--khaki);border-color:var(--khaki);color:var(--khaki-ink)}
-.s-c{display:flex;align-items:center;gap:6px;height:26px;padding:0 6px;font-size:10.5px;
-  line-height:1;
+.s-c{display:flex;align-items:center;gap:6px;height:30px;padding:0 7px;font-size:13px;
+  line-height:1;font-weight:600;
   border:1px solid var(--seam);border-radius:5px;background:var(--crate)}
 .s-c .box{width:14px;height:14px;min-width:14px;border-radius:4px}
 .s-c .box svg{width:9px;height:9px}
 .s-c.on{border-color:var(--khaki)}
 .s-c.on .box{background:var(--khaki);border-color:var(--khaki);color:var(--khaki-ink)}
 .s-ft{display:grid;grid-template-columns:1fr auto;font-family:var(--mono);
-  font-size:10px;color:var(--faded)}
+  font-size:12px;color:var(--faded)}
 
 /* сканер */
 .cam{position:relative;background:var(--floor2);border:1px solid var(--seam);
@@ -233,6 +233,13 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .ph-x:hover{color:#E9A79E;border-color:#D66E60}
 .ph-x svg{width:13px;height:13px}
 .phblk .btn[disabled]{opacity:.5;cursor:not-allowed}
+.ph-lim{font-size:12px;color:var(--faded);line-height:1.45;padding:2px 1px}
+.shotdlg{max-width:520px}
+.shotbox{position:relative;background:#000;border:1px solid var(--seam);
+  border-radius:11px;overflow:hidden;aspect-ratio:4/3;display:grid;place-items:center}
+.shotbox video{width:100%;height:100%;object-fit:cover;display:block}
+.shoterr{position:absolute;inset:0;display:grid;place-items:center;padding:16px;
+  text-align:center;font-size:12.5px;color:var(--stencil2);background:var(--floor2)}
 .ph-ov{cursor:zoom-out}
 .ph-ov img{max-width:96vw;max-height:92vh;border-radius:10px;
   border:1px solid var(--seam2);object-fit:contain}
@@ -376,27 +383,27 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   body.pr-stick .sheet>*:nth-child(n+2){display:grid}
   body.pr-stick .stick{background:#fff;border:0;border-right:.5pt dashed #000;
     border-bottom:.5pt dashed #000;border-radius:0;
-    width:52mm;height:30mm;padding:2mm;gap:1mm;break-inside:avoid;margin:0;
-    align-content:space-between}
+    width:52mm;height:30mm;padding:1.2mm;gap:.5mm;break-inside:avoid;margin:0;
+    align-content:space-between;overflow:hidden}
   body.pr-stick .s-top{height:auto}
-  body.pr-stick .s-sn{font-size:13pt;letter-spacing:.3px}
-  body.pr-stick .s-md{font-size:5pt;line-height:1.2}
-  body.pr-stick .s-who{font-size:6pt;min-height:0}
+  body.pr-stick .s-sn{font-size:19pt;letter-spacing:.2px}
+  body.pr-stick .s-md{font-size:7pt;line-height:1.15}
+  body.pr-stick .s-who{font-size:8pt;min-height:0;font-weight:600}
   body.pr-stick .s-md,body.pr-stick .s-who{color:#000}
   body.pr-stick .s-ft{color:#555}
   body.pr-stick .s-who .r{color:#555}
-  body.pr-stick .s-grid{gap:.7mm}
-  body.pr-stick .s-c{background:#fff;border:var(--pl);border-radius:1px;height:3.8mm;
-    font-size:5pt;line-height:1;align-items:center;padding:0 .7mm;gap:.7mm;
-    overflow:hidden;white-space:nowrap}
-  body.pr-stick .s-c .box{border-color:#000;border-radius:0;width:5px;height:5px;min-width:5px}
-  body.pr-stick .s-ft{font-size:4.6pt}
+  body.pr-stick .s-grid{gap:.5mm}
+  body.pr-stick .s-c{background:#fff;border:var(--pl);border-radius:1px;height:4mm;
+    font-size:7pt;line-height:1;align-items:center;padding:0 .6mm;gap:.6mm;
+    overflow:hidden;white-space:nowrap;font-weight:600}
+  body.pr-stick .s-c .box{border-color:#000;border-radius:0;width:7px;height:7px;min-width:7px}
+  body.pr-stick .s-ft{font-size:6.4pt;font-weight:600}
   body.pr-stick .s-c.on .box{background:#000;border:2.5px solid #000}
   body.m-filled.pr-stick .s-grid{display:none}
   body.m-filled.pr-stick .s-list{display:flex;flex-wrap:wrap;gap:1.4mm;align-content:flex-start}
-  body.pr-stick .s-i{border:var(--pl);border-radius:1px;padding:.4mm .8mm;font-size:5pt;
-    line-height:1;align-items:center;white-space:nowrap;gap:.7mm}
-  body.pr-stick .s-i .box{width:5px;height:5px;min-width:5px;border-radius:0;border:.5pt solid #000}
+  body.pr-stick .s-i{border:var(--pl);border-radius:1px;padding:.5mm .8mm;font-size:7pt;
+    line-height:1;align-items:center;white-space:nowrap;gap:.6mm;font-weight:600}
+  body.pr-stick .s-i .box{width:7px;height:7px;min-width:7px;border-radius:0;border:.5pt solid #000}
   body.pr-stick .s-i.on .box{background:#000;border:2.5px solid #000}
   body.m-filled.pr-stick .s-list{gap:.7mm}
   body.pr-stick .s-md .st{color:#000}
@@ -462,6 +469,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
       <input type="file" id="file" accept="image/*" hidden>
       <input type="file" id="json" accept="application/json,.json" hidden>
   <input type="file" id="photoIn" accept="image/*" multiple hidden>
+  <input type="file" id="photoCam" accept="image/*" capture="environment" hidden>
     </div>
     <div id="card" hidden></div>
   </div>
@@ -986,6 +994,12 @@ function bind(){
     if(t&&(e.key===' '||e.key==='Enter')){ e.preventDefault(); act({target:e.target}); } });
   var pb=$('#bPhoto');
   if(pb) pb.onclick=function(){ $('#photoIn').click(); };
+  var pc=$('#bPhotoCam');
+  if(pc) pc.onclick=function(){
+    /* На телефоні capture відкриває камеру одразу; на десктопі його
+       ігнорують, тому там знімаємо через getUserMedia. */
+    if(isMobile()) $('#photoCam').click(); else shootDlg();
+  };
   [].forEach.call(document.querySelectorAll('#card [data-pdel]'),function(b){
     b.onclick=function(e){ e.stopPropagation(); delPhoto(+b.getAttribute('data-pdel')); };
   });
@@ -1072,10 +1086,69 @@ function photoBlk(){
        '<svg><use href="#i-x"/></svg></button></figure>';
   });
   h+='</div>';
-  var n=(S.photos||[]).length;
-  h+='<button class="btn" id="bPhoto" type="button"'+(n>=MAXPH?' disabled':'')+'>'+
-     '<svg><use href="#i-cam"/></svg>'+(n>=MAXPH?'Ліміт '+MAXPH+' фото':'Додати фото')+'</button>';
+  var n=(S.photos||[]).length,full=n>=MAXPH;
+  if(full){
+    h+='<div class="ph-lim">Досягнуто ліміт '+MAXPH+' фото. Видаліть зайве, щоб додати нове.</div>';
+  } else {
+    h+='<div class="seg2">'+
+       '<button class="btn" id="bPhotoCam" type="button">'+
+         '<svg><use href="#i-cam"/></svg>Зняти</button>'+
+       '<button class="btn" id="bPhoto" type="button">'+
+         '<svg><use href="#i-file"/></svg>З файлу</button></div>';
+  }
   return blk('i-cam','Фото',n||'',h,'noprint phblk');
+}
+
+function isMobile(){
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||
+         (navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform));
+}
+
+/* Зйомка з вебкамери (десктоп). Окремий потік, щоб не чіпати сканер. */
+var shotStream=null;
+function shootDlg(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    toast('Камера недоступна — оберіть файл'); return;
+  }
+  var ov=document.createElement('div'); ov.className='ov noprint';
+  ov.innerHTML='<div class="dlg shotdlg"><h3><svg style="width:17px;height:17px">'+
+    '<use href="#i-cam"/></svg>Зняти фото'+
+    '<button class="iconbtn" data-a="x" type="button"><svg><use href="#i-x"/></svg></button></h3>'+
+    '<div class="shotbox"><video id="shotVid" playsinline muted></video>'+
+    '<div class="shoterr" id="shotErr" hidden></div></div>'+
+    '<button class="btn pri" data-a="snap" type="button">'+
+    '<svg><use href="#i-cam"/></svg>Зняти</button></div>';
+  document.body.appendChild(ov);
+
+  var vid=ov.querySelector('#shotVid');
+  function close(){
+    if(shotStream){ shotStream.getTracks().forEach(function(t){ t.stop(); }); shotStream=null; }
+    if(ov.parentNode) document.body.removeChild(ov);
+  }
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},
+    width:{ideal:1920},height:{ideal:1080}}})
+    .then(function(st){ shotStream=st; vid.srcObject=st; return vid.play(); })
+    .catch(function(){
+      var e=ov.querySelector('#shotErr');
+      e.hidden=false; e.textContent='Немає доступу до камери. Потрібен https або localhost.';
+    });
+
+  ov.onclick=function(e){
+    var a=e.target.closest('[data-a]');
+    if(!a){ if(e.target===ov) close(); return; }
+    if(a.getAttribute('data-a')==='x'){ close(); return; }
+    if(!shotStream||!vid.videoWidth){ toast('Камера ще не готова'); return; }
+    var w=vid.videoWidth,hh=vid.videoHeight,k=Math.min(1,MAXPX/Math.max(w,hh)),
+        cv=document.createElement('canvas');
+    cv.width=Math.round(w*k); cv.height=Math.round(hh*k);
+    cv.getContext('2d').drawImage(vid,0,0,cv.width,cv.height);
+    var d=cv.toDataURL('image/jpeg',JPEGQ);
+    S.photos=S.photos||[];
+    if(S.photos.length>=MAXPH){ toast('Максимум '+MAXPH+' фото'); close(); return; }
+    S.photos.push({id:String(Date.now())+Math.random().toString(36).slice(2,7),
+                   data:d,note:'',at:new Date().toISOString()});
+    close(); afterPhotos();
+  };
 }
 
 /* Стиснення в браузері: довга сторона <= MAXPX, JPEG. */
@@ -1479,6 +1552,14 @@ $('#bOpen').onclick=function(){ $('#json').click(); };
 $('#json').onchange=function(){ if(this.files[0]) fromJson(this.files[0]); this.value=''; };
 $('#bGo').onclick=function(){ var v=$('#sn0').value.trim(); if(v) accept(v); };
 $('#sn0').onkeydown=function(e){ if(e.key==='Enter'){ e.preventDefault(); $('#bGo').click(); } };
+$('#photoIn').onchange=function(){
+  if(this.files&&this.files.length) addPhotos(this.files);
+  this.value='';
+};
+$('#photoCam').onchange=function(){
+  if(this.files&&this.files.length) addPhotos(this.files);
+  this.value='';
+};
 $('#bScan').onclick=showScan;
 $('#bPrint').onclick=printNow;
 $('#bShare').onclick=shareDlg;
