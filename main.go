@@ -77,9 +77,35 @@ func apiCards(w http.ResponseWriter, r *http.Request) {
 		save(w, r)
 	case http.MethodGet:
 		list(w, r)
+	case http.MethodDelete:
+		remove(w, r)
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+// DELETE /api/cards?sn=X — видалити картку. Незворотно.
+func remove(w http.ResponseWriter, r *http.Request) {
+	sn := r.URL.Query().Get("sn")
+	if sn == "" {
+		http.Error(w, "sn required", http.StatusBadRequest)
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	res, err := cards.DeleteOne(ctx, bson.M{"_id": sn})
+	if err != nil {
+		log.Println("delete:", err)
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	if res.DeletedCount == 0 {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	log.Println("deleted card:", sn)
+	writeJSON(w, bson.M{"ok": true, "sn": sn})
 }
 
 // POST /api/cards — створити або оновити картку за S/N.

@@ -50,11 +50,20 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
   color:var(--faded);font-weight:700}
 
 .rows{display:grid;gap:8px}
+.rowwrap{position:relative}
 .row{background:var(--crate);border:1px solid var(--seam);border-radius:14px;
-  padding:11px 13px;display:grid;gap:8px;
+  padding:11px 46px 11px 13px;display:grid;gap:8px;
   grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) auto;
   align-items:center}
 .row:hover{border-color:var(--seam2);background:var(--crate2)}
+.del{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  width:32px;height:32px;border-radius:9px;border:1px solid transparent;
+  background:transparent;color:var(--faded);cursor:pointer;padding:0;
+  display:flex;align-items:center;justify-content:center;opacity:.55}
+.del svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+.del:hover{opacity:1;color:#D66E60;border-color:#D66E60;background:rgba(214,110,96,.12)}
+.del:focus-visible{outline:2px solid var(--khaki);outline-offset:2px}
 .sn{font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.2px;
   overflow:hidden;text-overflow:ellipsis}
 .sub{font-size:11.5px;color:var(--faded);margin-top:2px}
@@ -67,6 +76,23 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
 .tag.out{background:rgba(214,110,96,.15);border-color:#D66E60;color:#D66E60}
 .dmg{font-family:var(--mono);font-size:13px;color:var(--stencil2)}
 .empty{padding:48px 16px;text-align:center;color:var(--faded);font-size:14px}
+.ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.62);
+  display:flex;align-items:center;justify-content:center;padding:16px}
+.dlg{background:var(--crate);border:1px solid var(--seam2);border-radius:12px;
+  width:100%;max-width:420px;padding:16px;display:grid;gap:10px}
+.dlg h3{font-size:15px;font-weight:800;letter-spacing:.3px}
+.dnote{font-size:12.5px;color:var(--stencil2);line-height:1.5}
+.derr{color:#E9A79E}
+.dlg input{width:100%;padding:9px 11px;height:38px;font-size:14px;
+  background:var(--floor2);color:var(--stencil);border:1px solid var(--seam);
+  border-radius:10px;outline:none;font-family:var(--mono)}
+.dlg input:focus{border-color:var(--khaki);background:var(--crate2)}
+.dbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dbtns .btn{justify-content:center}
+.btn.danger{background:#D66E60;border-color:#D66E60;color:#1a0f0d;font-weight:700}
+.btn.danger:disabled{background:var(--crate2);border-color:var(--seam2);
+  color:var(--faded);cursor:not-allowed}
+.mono{font-family:var(--mono)}
 @media(max-width:720px){
   .row{grid-template-columns:1fr auto}
   .cell.hide{display:none}
@@ -115,16 +141,21 @@ function row(c){
   var f=c.fields||{},n=(c.checks||[]).length,np=(c.photos||[]).length,
       st=f.status?'<span class="tag '+esc(f.status)+'">'+esc(STLBL[f.status]||f.status)+'</span>':'',
       who=[f.holder,f.callsign?'«'+f.callsign+'»':''].filter(Boolean).join(' ');
-  return '<a class="row" href="/#sn='+encodeURIComponent(c.sn)+'">'+
-    '<div><div class="sn">'+esc(c.sn)+'</div>'+
-      '<div class="sub">'+esc(MODELS[c.model]||c.model||'—')+
-      (f.bort?' · борт '+esc(f.bort):'')+'</div></div>'+
-    '<div class="cell hide"><span class="k">Підрозділ</span>'+esc(f.unit||'—')+'</div>'+
-    '<div class="cell hide"><span class="k">Власник</span>'+esc(who||'—')+'</div>'+
-    '<div style="text-align:right">'+st+
-      '<div class="sub dmg">'+n+' поз.'+(np?' · '+np+' фото':'')+
-        ' · '+esc(fmt(c.updatedAt))+'</div></div>'+
-  '</a>';
+  return '<div class="rowwrap">'+
+    '<a class="row" href="/#sn='+encodeURIComponent(c.sn)+'">'+
+      '<div><div class="sn">'+esc(c.sn)+'</div>'+
+        '<div class="sub">'+esc(MODELS[c.model]||c.model||'—')+
+        (f.bort?' · борт '+esc(f.bort):'')+'</div></div>'+
+      '<div class="cell hide"><span class="k">Підрозділ</span>'+esc(f.unit||'—')+'</div>'+
+      '<div class="cell hide"><span class="k">Власник</span>'+esc(who||'—')+'</div>'+
+      '<div style="text-align:right">'+st+
+        '<div class="sub dmg">'+n+' поз.'+(np?' · '+np+' фото':'')+
+          ' · '+esc(fmt(c.updatedAt))+'</div></div>'+
+    '</a>'+
+    '<button class="del" type="button" data-del="'+esc(c.sn)+'" title="Видалити картку">'+
+      '<svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'+
+    '</button>'+
+  '</div>';
 }
 function draw(){
   var q=document.getElementById('q').value.trim().toLowerCase(),
@@ -136,6 +167,70 @@ function draw(){
     '<div class="empty">Нічого не знайдено</div>';
 }
 document.getElementById('q').oninput=draw;
+
+/* Видалення незворотне, тому просимо ввести S/N — це унеможливлює
+   випадковий клік і підтверджує, що видаляють саме те, що думають. */
+function delDlg(sn){
+  var card=all.filter(function(c){ return c.sn===sn; })[0]||{},
+      f=card.fields||{},
+      info=[MODELS[card.model]||card.model,f.unit,f.holder].filter(Boolean).join(' · ');
+  var ov=document.createElement('div'); ov.className='ov';
+  ov.innerHTML='<div class="dlg">'+
+    '<h3>Видалити картку?</h3>'+
+    '<p class="dnote">Картку <b class="mono">'+esc(sn)+'</b>'+
+      (info?' ('+esc(info)+')':'')+' буде видалено з сервера назавжди. '+
+      'Це не можна скасувати.</p>'+
+    '<p class="dnote">Для підтвердження введіть серійний номер:</p>'+
+    '<input id="delsn" class="mono" autocomplete="off" placeholder="'+esc(sn)+'">'+
+    '<div class="dbtns">'+
+      '<button class="btn" data-a="cancel" type="button">Скасувати</button>'+
+      '<button class="btn danger" data-a="ok" type="button" disabled>Видалити</button>'+
+    '</div></div>';
+  document.body.appendChild(ov);
+
+  var inp=ov.querySelector('#delsn'),okb=ov.querySelector('[data-a="ok"]');
+  inp.focus();
+  function check(){
+    okb.disabled=inp.value.trim().toUpperCase()!==sn.toUpperCase();
+  }
+  inp.oninput=check;
+  inp.onkeydown=function(e){ if(e.key==='Enter'&&!okb.disabled) doDel(); };
+  function close(){ if(ov.parentNode) document.body.removeChild(ov); }
+  async function doDel(){
+    okb.disabled=true; okb.textContent='Видаляю…';
+    try{
+      var r=await fetch('/api/cards?sn='+encodeURIComponent(sn),{method:'DELETE'});
+      if(r.status===401){ location.href='/login'; return; }
+      if(!r.ok) throw new Error(r.status===404?'картку не знайдено':'помилка сервера');
+      /* Локальна копія на цьому пристрої теж має зникнути — інакше
+         наступне сканування відновить картку на сервері. */
+      try{ localStorage.removeItem('dc:'+sn); }catch(e){}
+      all=all.filter(function(c){ return c.sn!==sn; });
+      close(); draw();
+    }catch(e){
+      okb.textContent='Видалити'; check();
+      var er=ov.querySelector('.derr');
+      if(!er){ er=document.createElement('p'); er.className='dnote derr';
+        okb.parentNode.parentNode.insertBefore(er,okb.parentNode); }
+      er.textContent='Не вдалося видалити: '+e.message;
+    }
+  }
+  ov.onclick=function(e){
+    if(e.target===ov){ close(); return; }
+    var a=e.target.closest('[data-a]'); if(!a) return;
+    if(a.getAttribute('data-a')==='cancel') close(); else doDel();
+  };
+  document.addEventListener('keydown',function esc2(e){
+    if(e.key==='Escape'){ close(); document.removeEventListener('keydown',esc2); }
+  });
+}
+
+document.getElementById('rows').addEventListener('click',function(e){
+  var b=e.target.closest('[data-del]');
+  if(!b) return;
+  e.preventDefault();
+  delDlg(b.getAttribute('data-del'));
+});
 
 fetch('/api/cards').then(function(r){
   if(r.status===401){ location.href='/login'; return []; }
