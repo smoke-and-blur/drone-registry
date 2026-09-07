@@ -19,13 +19,15 @@ var cards *mongo.Collection
 
 // Card — одна картка пошкодження, ключ = серійний номер.
 type Card struct {
-	SN        string            `bson:"_id"           json:"sn"`
-	Model     string            `bson:"model"         json:"model"`
-	Fields    map[string]string `bson:"fields"        json:"fields"`
-	Checks    []string          `bson:"checks"        json:"checks"`
-	Photos    []Photo           `bson:"photos"        json:"photos"`
-	UpdatedAt time.Time         `bson:"updatedAt"     json:"updatedAt"`
-	CreatedAt time.Time         `bson:"createdAt"     json:"createdAt"`
+	SN     string            `bson:"_id"           json:"sn"`
+	Model  string            `bson:"model"         json:"model"`
+	Fields map[string]string `bson:"fields"        json:"fields"`
+	Checks []string          `bson:"checks"        json:"checks"`
+	Photos []Photo           `bson:"photos"        json:"photos"`
+	// Кількість фото — для списку, де вантажиться лише перше.
+	PhotoCount int       `bson:"photoCount"    json:"photoCount"`
+	UpdatedAt  time.Time `bson:"updatedAt"     json:"updatedAt"`
+	CreatedAt  time.Time `bson:"createdAt"     json:"createdAt"`
 }
 
 // Photo — знімок у вигляді data-URI (стиснений у браузері).
@@ -64,6 +66,7 @@ func main() {
 	http.HandleFunc("/login", handleLogin)
 	http.HandleFunc("/logout", handleLogout)
 	http.HandleFunc("/api/cards", guard(apiCards))
+	http.HandleFunc("/models.js", guard(page("models.js")))
 	http.HandleFunc("/list", guard(page("list.html")))
 	http.HandleFunc("/", guard(page("damage-card.html")))
 
@@ -155,11 +158,12 @@ func save(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	_, err := cards.UpdateByID(ctx, c.SN, bson.M{
 		"$set": bson.M{
-			"model":     c.Model,
-			"fields":    c.Fields,
-			"checks":    c.Checks,
-			"photos":    c.Photos,
-			"updatedAt": now,
+			"model":      c.Model,
+			"fields":     c.Fields,
+			"checks":     c.Checks,
+			"photos":     c.Photos,
+			"photoCount": len(c.Photos),
+			"updatedAt":  now,
 		},
 		"$setOnInsert": bson.M{"createdAt": now},
 	}, options.Update().SetUpsert(true))
@@ -191,7 +195,14 @@ func list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cur, err := cards.Find(ctx, bson.M{}, options.Find().SetSort(bson.M{"updatedAt": -1}).SetLimit(500))
+	// За датою створення: редагування не перекидає картку на початок,
+	// тож порядок лишається передбачуваним.
+	// Фото не віддаємо повністю — лише перше і лише для списку.
+	opt := options.Find().
+		SetSort(bson.D{{Key: "createdAt", Value: -1}, {Key: "_id", Value: 1}}).
+		SetProjection(bson.M{"photos": bson.M{"$slice": 1}}).
+		SetLimit(500)
+	cur, err := cards.Find(ctx, bson.M{}, opt)
 	if err != nil {
 		log.Println("list:", err)
 		http.Error(w, "db error", http.StatusInternalServerError)
@@ -202,6 +213,13 @@ func list(w http.ResponseWriter, r *http.Request) {
 		log.Println("list:", err)
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
+	}
+	// Картки, збережені до появи photoCount, його не мають. Показуємо
+	// хоча б те, що фото є, поки картку не перезбережуть.
+	for i := range out {
+		if out[i].PhotoCount == 0 {
+			out[i].PhotoCount = len(out[i].Photos)
+		}
 	}
 	writeJSON(w, out)
 }

@@ -527,6 +527,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 </div>
 <div id="toast"></div>
 
+<script src="/models.js"></script>
 <script>
 /* ── QR: byte mode, рівень M, версії 1..40 ── */
 var QR=(function(){
@@ -1288,12 +1289,7 @@ var QR=(function(){
 })();
 
 /* ── довідники ───────────────────────────────────────────────── */
-var MODELS={m3t:'DJI Mavic 3T',m3ta:'DJI Mavic 3TA',m3p:'DJI Mavic 3 Pro',
-            m30t:'DJI Matrice 30T',m4t:'DJI Matrice 4T',m4e:'DJI Matrice 4E',
-            evo:'Autel EVO MAX 4T'};
-var SHORT={m3t:'MAVIC 3T',m3ta:'MAVIC 3TA',m3p:'MAVIC 3 PRO',
-           m30t:'MATRICE 30T',m4t:'MATRICE 4T',m4e:'MATRICE 4E',
-           evo:'EVO MAX 4T'};
+/* MODELS, SHORT, STLBL, modelName(), snShort() — у models.js */
 var SN2MODEL={
  '1581F5FJC244P00D6Z39':'m3t','1581F5FJC243K00DY322':'m3t',
  '158F67QC249T0145H54':'m3p','1581F67QC249T0145H2V':'m3p',
@@ -1362,7 +1358,6 @@ var ARMCOLS=[
 var ABBR={1:'ПП',2:'ПЛ',3:'ЗЛ',4:'ЗП'};
 var VERDICT=['Діагностика','Ремонт','Заміна вузлів','Списання'];
 var STATUS=[['fix','Відновлено'],['out','Не підлягає ремонту']];
-var STLBL={fix:'ВІДНОВЛЕНО',out:'НЕ ПІДЛЯГАЄ'};
 var TEXTF=['sn','bort','hours','date','unit','holder','callsign','post','holderPhone',
            'basis','note','status','done','doneBy','techPhone','act'];
 
@@ -1584,7 +1579,7 @@ function stick(){
       '</div>'+
       '<div class="s-name">'+esc(S.holder||'')+
         (S.callsign?' <span class="cs">«'+esc(S.callsign)+'»</span>':'')+'</div>'+
-      '<div class="s-mdl">'+esc(SHORT[S.model]||'')+'</div>'+
+      '<div class="s-mdl">'+esc(modelName(S.model,true))+'</div>'+
       '<div class="s-sn">'+esc(S.sn||'')+'</div>'+
     '</div>'+
     /* другорядне — дрібніше */
@@ -2000,7 +1995,7 @@ function slug(v){
 }
 function fname(){
   var sur=slug((S.holder||'').trim().split(/\s+/)[0]),
-      parts=[slug(SHORT[S.model]||'БПЛА'),slug(S.unit),sur,'КАРТКА-ПОШКОДЖЕНЬ'];
+      parts=[slug(modelName(S.model,true)||'БПЛА'),slug(S.unit),sur,'КАРТКА-ПОШКОДЖЕНЬ'];
   if(S.basis) parts.push(slug(S.basis));
   return parts.filter(Boolean).join('_');
 }
@@ -2070,7 +2065,7 @@ function shareDlg(){
     else if(a==='json') dl(cfgBlob(),fname()+'.json');
     else if(a==='send'){
       var d={title:'Картка пошкодження '+(S.sn||''),
-             text:'БпЛА '+(MODELS[S.model]||'')+' '+(S.sn||'')+', '+(S.unit||''),url:link()};
+             text:'БпЛА '+modelName(S.model)+' '+(S.sn||'')+', '+(S.unit||''),url:link()};
       if(navigator.share) navigator.share(d).catch(function(){});
       else copy(link());
     }
@@ -2198,7 +2193,7 @@ function accept(v){
 }
 var camList=[],camIdx=0,scanCv=null,scanCx=null,lastScan=0;
 /* Діагностика сканера — показується кнопкою «Діагностика». */
-var DIAG={frames:0,err:'',lum:null,lastText:'',engine:''};
+var DIAG={frames:0,err:'',lum:null,lastText:'',engine:'',camErr:'',res:'',ppm:''};
 
 /* Список доступних камер. Мітки доступні лише після дозволу. */
 async function listCams(){
@@ -2232,13 +2227,15 @@ function renderCamPick(){
   });
 }
 
-function camConstraints(){
-  var v={width:{ideal:1920},height:{ideal:1080},
+/* Лише ideal-обмеження: будь-яке невідоме браузеру поле поза advanced
+   змушує Safari відхилити весь запит. focusMode кладемо в advanced —
+   там незнані поля ігноруються, а не ламають запит. */
+function camConstraints(res){
+  var v={width:{ideal:res||1920},height:{ideal:Math.round((res||1920)*9/16)},
          frameRate:{ideal:30},
-         focusMode:'continuous',
          advanced:[{focusMode:'continuous'}]};
   if(camList.length&&camList[camIdx]&&camList[camIdx].deviceId)
-    v.deviceId={exact:camList[camIdx].deviceId};
+    v.deviceId={ideal:camList[camIdx].deviceId};
   else v.facingMode={ideal:'environment'};
   return {video:v};
 }
@@ -2250,19 +2247,38 @@ async function restartCam(){
 }
 
 async function startStream(){
-  try{ stream=await navigator.mediaDevices.getUserMedia(camConstraints()); }
-  catch(e){
-    try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}); }
-    catch(e2){
-      $('#frame').hidden=true; $('#camoff').hidden=false;
-      $('#camoff').textContent='Немає доступу до камери. Потрібен https або localhost.';
-      return false;
-    }
+  /* Від найкращого до найпростішого: кожен крок усе одно просить
+     високу роздільність, бо саме вона вирішує, чи прочитається QR. */
+  var tries=[camConstraints(1920),camConstraints(1280),
+             {video:{facingMode:{ideal:'environment'},
+                     width:{ideal:1920},height:{ideal:1080}}},
+             {video:{facingMode:'environment'}},
+             {video:true}];
+  stream=null;
+  for(var i=0;i<tries.length&&!stream;i++){
+    try{ stream=await navigator.mediaDevices.getUserMedia(tries[i]); }
+    catch(e){ DIAG.camErr=e.name+' (варіант '+(i+1)+')'; }
+  }
+  if(!stream){
+    $('#frame').hidden=true; $('#camoff').hidden=false;
+    $('#camoff').textContent='Немає доступу до камери. Потрібен https або localhost.';
+    return false;
   }
   var v=$('#vid'); v.srcObject=stream;
   v.setAttribute('playsinline','');   /* iOS: не відкривати на весь екран */
+  v.setAttribute('autoplay','');
   v.muted=true;
   try{ await v.play(); }catch(e){}
+
+  /* Якщо камера дала менше, ніж просили — пробуємо підняти вже на треку. */
+  var t=camTrack();
+  if(t&&t.applyConstraints){
+    var st=t.getSettings?t.getSettings():{};
+    if((st.width||0)<1280){
+      try{ await t.applyConstraints({width:{ideal:1920},height:{ideal:1080}}); }catch(e){}
+    }
+    try{ await t.applyConstraints({advanced:[{focusMode:'continuous'}]}); }catch(e){}
+  }
   applyZoom();
   torchOn=false; refreshTorch();
   scanLoop();
@@ -2477,7 +2493,8 @@ $('#bDiag').onclick=function(){
     'BarcodeDetector: '+(hasDet()?'є (нативний)':'немає -> власний декодер'),
     'Відео: '+(v&&v.videoWidth?v.videoWidth+'x'+v.videoHeight:'немає кадру'),
     'Потік: '+(st.width?st.width+'x'+st.height:'—')+
-      (st.frameRate?' @'+Math.round(st.frameRate)+'fps':''),
+      (st.frameRate?' @'+Math.round(st.frameRate)+'fps':'')+
+      (st.width&&st.width<1280?'  ⚠ НИЗЬКА РОЗДІЛЬНІСТЬ':''),
     'Кадрів оброблено: '+DIAG.frames,
     'Ділянка аналізу: '+(DIAG.res||'—'),
     'Пікселів на модуль: '+(DIAG.ppm||'—'),
@@ -2486,6 +2503,7 @@ $('#bDiag').onclick=function(){
        (DIAG.lum.max-DIAG.lum.min<20?'  ⚠ КАДР ПОРОЖНІЙ':'')):'—'),
     'Останній текст: '+(DIAG.lastText?DIAG.lastText.slice(0,40):'—'),
     'Помилка: '+(DIAG.err||'немає'),
+    'Запуск камери: '+(DIAG.camErr||'без помилок'),
     'Протокол: '+location.protocol+(location.protocol==='https:'?'':'  ⚠ потрібен https')
   ];
   alert(lines.join('\n'));
