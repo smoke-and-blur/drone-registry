@@ -248,6 +248,13 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .torch.on{background:var(--khaki);border-color:var(--khaki);color:var(--khaki-ink)}
 .torch.on svg{fill:currentColor}
 .diagbtn{font-size:12px;color:var(--faded);height:32px}
+.loadrow{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--faded);
+  padding:6px 2px}
+.spin{width:15px;height:15px;flex:none;border-radius:50%;
+  border:2px solid var(--seam2);border-top-color:var(--khaki);
+  animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
 .campick{display:flex;flex-wrap:wrap;gap:var(--gap)}
 .campick .opt{flex:1 1 auto;min-width:0;justify-content:center;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-size:12.5px;
@@ -344,7 +351,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   .logo b{display:none}
 }
 
-@media screen{ #stickBlk,.qrblk,.sigs{display:none} }
+@media screen{ .qrblk,.sigs{display:none} }
 @media print{
   @page{size:A4;margin:10mm}
   html,body{background:#fff;color:#000;height:auto;min-height:0;overflow:visible}
@@ -522,7 +529,10 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 
 <div id="root">
   <div class="wrap">
-    <div class="blk noprint" id="scanBlk">
+    <div class="blk noprint" id="loadBlk" hidden>
+      <div class="loadrow"><span class="spin"></span>Завантаження картки…</div>
+    </div>
+    <div class="blk noprint" id="scanBlk" hidden>
       <div class="blkh"><svg><use href="#i-qr"/></svg>Сканування</div>
       <div class="cam" id="cam">
         <video id="vid" playsinline muted></video>
@@ -1529,7 +1539,8 @@ function render(){
        '<button class="btn" id="bClear"><svg><use href="#i-x"/></svg>Очистити</button></div></div>';
 
   document.title=fname();
-  var c=$('#card'); c.innerHTML=h; c.hidden=false; $('#scanBlk').hidden=true;
+  var c=$('#card'); c.innerHTML=h; c.hidden=false;
+  $('#scanBlk').hidden=true; $('#loadBlk').hidden=true;
   $('#savebar').hidden=false;
   bind();
   refreshSaveBtn();
@@ -2595,6 +2606,7 @@ function fromJson(f){
 }
 function showScan(){
   stopCam(); $('#card').hidden=true; $('#scanBlk').hidden=false;
+  $('#loadBlk').hidden=true;
   $('#savebar').hidden=true;
   setTimeout(function(){ var e=$('#sn0'); if(e) e.focus(); },30);
 }
@@ -2647,26 +2659,55 @@ window.addEventListener('beforeunload',function(e){
   if(!unsaved||!S.sn) return;
   e.preventDefault(); e.returnValue='';
 });
+
+/* Діалог із трьома явними виходами. Системний confirm() давав лише
+   два, і «Скасувати» насправді означало «піти без збереження» —
+   передумати було неможливо. */
+function askUnsaved(what,go){
+  var ov=document.createElement('div'); ov.className='ov noprint';
+  ov.innerHTML='<div class="dlg"><h3><svg style="width:17px;height:17px">'+
+    '<use href="#i-alert"/></svg>Незбережені зміни</h3>'+
+    '<p class="cnote">Картку <b class="mono">'+esc(S.sn||'')+'</b> змінено, '+
+    'але не збережено в базі. '+esc(what)+'</p>'+
+    '<button class="btn pri" data-a="save"><svg><use href="#i-check"/></svg>Зберегти</button>'+
+    '<button class="btn" data-a="skip">Не зберігати</button>'+
+    '<button class="btn" data-a="stay">Залишитись у картці</button></div>';
+  document.body.appendChild(ov);
+
+  function close(){ if(ov.parentNode) document.body.removeChild(ov); }
+  ov.onclick=function(e){
+    if(e.target===ov){ close(); return; }        /* клік поза діалогом = залишитись */
+    var b=e.target.closest('[data-a]'); if(!b) return;
+    var a=b.getAttribute('data-a');
+    if(a==='stay'){ close(); return; }
+    if(a==='skip'){ unsaved=false; close(); go(); return; }
+    b.disabled=true; b.querySelector('svg')&&(b.textContent='Збереження…');
+    sync().then(function(ok){
+      close();
+      if(ok) go();
+      else toast('Не збережено — зміни лишились на пристрої');
+    });
+  };
+  document.addEventListener('keydown',function esc2(e){
+    if(e.key==='Escape'){ close(); document.removeEventListener('keydown',esc2); }
+  });
+}
+
 [].forEach.call(document.querySelectorAll('header a[href="/list"],header a[href="/logout"]'),
   function(a){
     a.addEventListener('click',function(e){
       if(!unsaved||!S.sn) return;
       e.preventDefault();
-      if(confirm('Є незбережені зміни. Зберегти перед виходом?')){
-        sync().then(function(){ location.href=a.getAttribute('href'); });
-      } else {
-        unsaved=false;                    /* свідома відмова */
+      askUnsaved('Що зробити перед переходом?',function(){
         location.href=a.getAttribute('href');
-      }
+      });
     });
   });
 $('#bHome').onclick=function(){ $('#bScan').click(); };
 $('#bScan').onclick=function(){
   if(unsaved&&S.sn){
-    if(confirm('Є незбережені зміни. Зберегти перед скануванням іншої картки?')){
-      sync().then(showScan); return;
-    }
-    unsaved=false;
+    askUnsaved('Що зробити перед скануванням іншої картки?',showScan);
+    return;
   }
   showScan();
 };
@@ -2685,6 +2726,7 @@ document.body.setAttribute('ontouchstart','');
         S.model=S.model||SN2MODEL[sn]||''; S.date=S.date||today(); loadTech();
         dirty=true; save(); render(); return;
       }
+      $('#loadBlk').hidden=false;      /* без цього блимав би сканер */
       loadCard(sn,function(){           /* лише S/N — звіряємо з сервером */
         S.sn=sn; S.model=S.model||SN2MODEL[sn]||''; S.date=S.date||today();
         loadTech(); save(); render();
