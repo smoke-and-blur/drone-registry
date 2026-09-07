@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Картка пошкодження БпЛА</title>
+<style>
+:root{
+  --floor:#0E1210; --floor2:#121714;
+  --crate:#181E1A; --crate2:#1F2621; --crate3:#273029;
+  --seam:#2B342D; --seam2:#3A453C;
+  --stencil:#E9ECE4; --stencil2:#B8BFB2; --faded:#828A7E;
+  --khaki:#B7C77E; --khaki-ink:#151A10;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --gap:7px;
+  --cols:4;
+}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable}
+body{background:var(--floor);color:var(--stencil);
+  font:15px/1.45 -apple-system,'Segoe UI',system-ui,sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(var(--seam) 1px,transparent 1px),
+    linear-gradient(90deg,var(--seam) 1px,transparent 1px);
+  background-size:44px 44px;opacity:.14}
+#root{position:relative;z-index:1}
+svg{flex:none;stroke:currentColor;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--khaki);outline-offset:2px}
+
+header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--seam)}
+.hbar{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;
+  align-items:center;gap:8px;min-height:56px;min-width:0}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;min-width:0;
+  letter-spacing:.6px;font-size:15px;white-space:nowrap;overflow:hidden}
+.logo b{font-weight:800;overflow:hidden;text-overflow:ellipsis}
+.logo svg{width:20px;height:20px;color:var(--khaki)}
+.spacer{flex:1}
+.iconbtn{width:40px;height:40px;border-radius:11px;border:1px solid var(--seam2);
+  background:var(--crate2);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--stencil2);flex:none}
+.iconbtn:hover{color:var(--stencil)}
+.iconbtn svg{width:18px;height:18px}
+
+.wrap{max-width:1000px;margin:0 auto;padding:14px 12px 80px;display:grid;gap:18px}
+#card{display:grid;gap:18px;min-width:0;cursor:default}
+#cols,#tail{display:grid;gap:18px;min-width:0}
+.lbl{font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;color:var(--faded);
+  font-weight:700;height:13px;line-height:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.field{display:grid;gap:3px;align-content:start;min-width:0;grid-template-rows:12px 36px}
+.field.ta{grid-template-rows:13px auto}
+input,textarea,select{width:100%;min-width:0;padding:8px 10px;font-size:14px;height:36px;
+  background:var(--floor2);color:var(--stencil);border:1px solid var(--seam);
+  border-radius:11px;outline:none;font-family:inherit;appearance:none}
+input:focus,textarea:focus,select:focus{border-color:var(--khaki);background:var(--crate2)}
+input::placeholder{color:#5E655B}
+textarea{height:auto;min-height:64px;resize:vertical}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
+  linear-gradient(135deg,var(--faded) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;
+  background-size:5px 5px;background-repeat:no-repeat;padding-right:34px}
+.mono{font-family:var(--mono);letter-spacing:.2px;font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:9px;height:38px;font-size:13.5px;font-weight:600;border-radius:10px;
+  cursor:pointer;border:1px solid var(--seam2);background:var(--crate2)}
+.btn:hover{border-color:var(--faded)}
+.btn.pri{background:var(--khaki);border-color:var(--khaki);color:var(--khaki-ink)}
+.btn svg{width:17px;height:17px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--gap)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)}
+.acts{display:grid;gap:var(--gap)}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+
+
+.blk{background:var(--crate);border:1px solid var(--seam);border-radius:14px;
+  padding:10px 11px;display:grid;gap:8px;min-width:0}
+.blk>*{min-width:0}
+.wrap>*{min-width:0}
+.blkh{display:flex;align-items:center;gap:8px;font-weight:800;font-size:11.5px;height:18px;
+  letter-spacing:1.4px;text-transform:uppercase;color:var(--stencil2);white-space:nowrap}
+.blkh svg{width:15px;height:15px;color:var(--khaki)}
+.blkh .n{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--faded);
+  background:var(--floor2);border:1px solid var(--seam);border-radius:5px;
+  padding:1px 7px;letter-spacing:0;min-width:38px;max-width:100%;text-align:center;flex:none;
+  overflow:hidden;text-overflow:ellipsis}
+.fields{display:grid;grid-template-columns:repeat(var(--cols),1fr);gap:var(--gap)}
+.fields.c3{grid-template-columns:repeat(3,1fr)}
+.field.wide{grid-column:auto}
+.fields>*,.opts>*,.grid2>*,.grid4>*,.sheet>*,.phs>*{min-width:0}
+
+.opts{display:grid;grid-template-columns:repeat(var(--cols),1fr);gap:var(--gap)}
+.opts.c3{grid-template-columns:repeat(3,1fr)}
+.opts.c2{grid-template-columns:repeat(2,1fr)}
+.full{grid-column:1/-1}
+.dv{display:none}
+.opt.rad .box{border-radius:99px}
+.opt.rad .box i{width:8px;height:8px;border-radius:99px;background:var(--khaki-ink);
+  display:block;opacity:0}
+.opt.rad.on .box{background:var(--khaki);border-color:var(--khaki)}
+.opt.rad.on .box i{opacity:1}
+@media(max-width:720px){.opts.c3{grid-template-columns:repeat(3,1fr)}
+.opts.c2{grid-template-columns:repeat(2,1fr)}
+.full{grid-column:1/-1}
+.dv{display:none}
+.opt.rad .box{border-radius:99px}
+.opt.rad .box i{width:8px;height:8px;border-radius:99px;background:var(--khaki-ink);
+  display:block;opacity:0}
+.opt.rad.on .box{background:var(--khaki);border-color:var(--khaki)}
+.opt.rad.on .box i{opacity:1}}
+.opt{display:flex;align-items:center;gap:8px;min-height:38px;padding:5px 9px;overflow:hidden;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  background:var(--floor2);border:1px solid var(--seam);border-radius:11px;
+  cursor:pointer;font-size:12.5px;line-height:1.15}
+.opt>span:last-child{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden}
+.opt.on{border-color:var(--khaki);background:var(--crate3)}
+.opt.pad,.field.pad{visibility:hidden}
+.box{width:18px;height:18px;min-width:18px;border:1.5px solid var(--seam2);border-radius:6px;
+  display:grid;place-items:center;flex:none;color:transparent;box-sizing:border-box}
+.box svg{width:12px;height:12px;stroke-width:2.6}
+.opt.on .box{background:var(--khaki);border-color:var(--khaki);color:var(--khaki-ink)}
+
+.mxwrap{overflow-x:auto;min-width:0;scrollbar-gutter:stable}
+.mx{display:grid;gap:var(--gap);min-width:min(540px,100%)}
+.mxrow{display:grid;grid-template-columns:var(--mxc);gap:var(--gap);min-width:0}
+.mxh{font-size:10px;color:var(--faded);text-align:center;line-height:1.15;
+  display:flex;align-items:flex-end;justify-content:center;padding:0 2px;height:22px}
+.mxl{display:flex;align-items:center;font-family:var(--mono);font-size:12.5px;font-weight:700}
+.mxl.w{font-family:inherit;font-size:11.5px;font-weight:600;line-height:1.15;color:var(--stencil2)}
+.mx.tr{min-width:0;gap:6px}
+.mx.tr .mxrow{gap:6px}
+.mx.tr .mxh{height:20px;align-items:center;font-family:var(--mono);font-size:12px;
+  font-weight:700;color:var(--stencil2)}
+
+.mx.tr .cell{max-width:38px}
+.mx.tr{display:none}
+@media(max-width:720px){.mx.tr{display:grid}.mx.wide{display:none}}
+.cell{display:grid;place-items:center;width:100%;max-width:34px;aspect-ratio:1;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  justify-self:center;background:var(--floor2);
+  border:1px solid var(--seam);border-radius:11px;cursor:pointer;color:transparent}
+.cell svg{width:14px;height:14px;stroke-width:2.6}
+.cell.on{border-color:var(--khaki);background:var(--khaki);color:var(--khaki-ink)}
+
+.field.sig{display:none}
+.qrbox{display:grid;place-items:center;padding:4px}
+.qrbox svg{width:150px;height:150px;background:#fff;border-radius:6px}
+.sigl{border-bottom:1px solid var(--seam2);height:26px}
+.segx{display:flex;border:1px solid var(--seam2);border-radius:6px;overflow:hidden;
+  margin-left:auto;flex:none}
+.segx button{border:0;background:var(--crate2);color:var(--faded);font-family:var(--mono);
+  font-size:11.5px;font-weight:700;padding:3px 10px;cursor:pointer}
+.segx button.on{background:var(--khaki);color:var(--khaki-ink)}
+
+/* фото */
+.phs{display:grid;grid-template-columns:repeat(var(--cols),1fr);gap:var(--gap)}
+.ph{position:relative;aspect-ratio:4/3;background:var(--floor2);
+  border:1px solid var(--seam);border-radius:8px;overflow:hidden}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph .rm{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:6px;
+  border:1px solid var(--seam2);background:rgba(14,18,16,.82);display:grid;place-items:center;
+  cursor:pointer;color:var(--stencil2)}
+.ph .rm svg{width:14px;height:14px}
+.ph .ix{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:10px;
+  background:rgba(14,18,16,.82);border-radius:4px;padding:1px 6px}
+.phadd{display:grid;place-items:center;gap:6px;aspect-ratio:4/3;cursor:pointer;
+  border:1px dashed var(--seam2);border-radius:8px;background:var(--floor2);
+  color:var(--faded);font-size:13px}
+.phadd svg{width:20px;height:20px}
+
+/* стікер */
+.sheet{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--gap)}
+.sheet>*:nth-child(n+2){display:none}
+.stick{background:var(--floor2);border:1px solid var(--seam2);border-radius:8px;
+  padding:10px;display:grid;gap:8px;align-content:start;align-self:start}
+.s-top{display:grid;grid-template-columns:1fr minmax(0,auto);gap:8px;align-items:center;height:32px}
+.s-sn{font-family:var(--mono);font-size:30px;font-weight:800;line-height:1;letter-spacing:2px}
+.s-md .st{font-weight:800;letter-spacing:.5px;color:var(--stencil2)}
+.s-md .st.ok{color:var(--khaki)}
+.s-md{font-size:11px;color:var(--faded);text-align:right;line-height:1.35;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.s-who{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;min-height:17px}
+.s-who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-who .r{text-align:right;color:var(--faded)}
+.s-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.s-list{display:none;flex-wrap:wrap;gap:6px}
+.s-i{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--seam);
+  border-radius:5px;padding:2px 6px;font-size:10.5px}
+.s-i .box{width:14px;height:14px;min-width:14px;border-radius:4px}
+.s-i.on .box{background:var(--khaki);border-color:var(--khaki);color:var(--khaki-ink)}
+.s-c{display:flex;align-items:center;gap:6px;height:26px;padding:0 6px;font-size:10.5px;
+  line-height:1;
+  border:1px solid var(--seam);border-radius:5px;background:var(--crate)}
+.s-c .box{width:14px;height:14px;min-width:14px;border-radius:4px}
+.s-c .box svg{width:9px;height:9px}
+.s-c.on{border-color:var(--khaki)}
+.s-c.on .box{background:var(--khaki);border-color:var(--khaki);color:var(--khaki-ink)}
+.s-ft{display:grid;grid-template-columns:1fr auto;font-family:var(--mono);
+  font-size:10px;color:var(--faded)}
+
+/* сканер */
+.cam{position:relative;background:var(--floor2);border:1px solid var(--seam);
+  border-radius:14px;overflow:hidden;aspect-ratio:4/3;width:100%;max-width:100%}
+#scanBlk{max-width:520px;margin:0 auto;width:100%}
+.snrow{display:grid;grid-template-columns:1fr;gap:var(--gap)}
+.scan3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)}
+.scan3 .btn{padding:0 8px}
+@media(max-width:720px){.scan3{grid-template-columns:1fr}}
+.snrow input{height:44px;font-size:15px;letter-spacing:.6px}
+.cam video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+.frame{position:absolute;inset:16%;border:2px solid var(--khaki);border-radius:12px;
+  box-shadow:0 0 0 100vmax rgba(0,0,0,.35)}
+.camoff{position:absolute;inset:0;display:grid;place-items:center;color:var(--faded);
+  font-size:13px;text-align:center;padding:20px}
+
+.ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.62);
+  display:flex;align-items:center;justify-content:center;padding:16px}
+.dlg{background:var(--crate);border:1px solid var(--seam2);border-radius:12px;
+  width:100%;max-width:420px;padding:16px;display:grid;gap:var(--gap)}
+.dlg h3{font-size:15px;display:flex;align-items:center;gap:8px}
+.cdlg{max-width:560px}
+.cdlg h3 svg{color:var(--khaki)}
+.cnote{font-size:12.5px;color:var(--stencil2);line-height:1.5}
+.ctbl{max-height:46vh;overflow:auto;border:1px solid var(--seam);border-radius:10px}
+.ctbl table{width:100%;border-collapse:collapse;font-size:13px}
+.ctbl th{position:sticky;top:0;background:var(--crate2);text-align:left;
+  padding:7px 9px;font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--faded);font-weight:700;border-bottom:1px solid var(--seam)}
+.ctbl td{padding:7px 9px;border-bottom:1px solid var(--seam);vertical-align:top;
+  word-break:break-word}
+.ctbl tr:last-child td{border-bottom:0}
+.ctbl .ck{color:var(--faded);font-size:11.5px;white-space:nowrap}
+.ctbl .cv{width:38%}
+.ctbl .src{display:none}
+@media(max-width:560px){
+  .ctbl thead{display:none}
+  .ctbl td,.ctbl tr{display:block;width:auto}
+  .ctbl .ck{padding-bottom:2px;font-weight:700;color:var(--stencil2)}
+  .ctbl .cv{width:auto;padding-top:0}
+  .ctbl .src{display:inline-block;min-width:70px;color:var(--faded);font-size:10.5px;
+    letter-spacing:.6px;text-transform:uppercase;font-weight:700}
+}
+.dlg h3 .iconbtn{margin-left:auto}
+
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:99;
+  background:var(--khaki);color:var(--khaki-ink);font-weight:700;font-size:13.5px;
+  padding:11px 18px;border-radius:99px;display:none;max-width:90vw;text-align:center}
+
+@media(max-width:1000px){:root{--cols:3}}
+@media(max-width:720px){
+  :root{--cols:2}
+  .grid4,.grid3{grid-template-columns:repeat(2,1fr)}
+  .sheet{grid-template-columns:1fr}
+  .wrap,#card,#cols,#tail{gap:14px}
+  .fields.c3{grid-template-columns:repeat(2,1fr)}
+  .field.wide{grid-column:1/-1}
+  .mx{min-width:0}
+  .logo b{display:none}
+}
+
+@media screen{ #stickBlk,.qrblk,.sigs{display:none} }
+@media print{
+  @page{size:A4;margin:10mm}
+  html,body{background:#fff;color:#000;height:auto;min-height:0;overflow:visible}
+  body{font-family:var(--mono);font-size:6.2pt;line-height:1.05;
+    --pl:.5pt solid #9a9a9a;--rh:17px;--px:5px}
+  body>*:not(#root){display:none!important}
+  body::before,header,#toast,.ov,.noprint,.segx{display:none!important}
+  #root{overflow:visible}
+  .wrap{width:190mm;max-width:190mm;margin:0 auto;padding:0;gap:0;display:block}
+  #card{display:block}
+  #cols{display:block;column-count:2;column-gap:6mm;orphans:1;widows:1}
+  #tail{display:grid;grid-template-columns:1fr 1fr;gap:4mm 6mm;align-items:start;margin-top:4mm}
+  #tail .opts,#tail .fields{grid-template-columns:repeat(2,1fr)}
+  #doneBlk{grid-column:1;grid-row:1}
+  .sigs{grid-column:2;grid-row:1}
+  .qrblk{grid-column:2;grid-row:2;justify-self:end}
+  .blk{background:none;border:0;border-radius:0;padding:0;gap:0;margin:0 0 4mm;
+    display:block;break-inside:avoid;page-break-inside:avoid}
+  #tail .blk{margin:0}
+  .blkh{color:#000;font-size:6pt;height:auto;padding:0 0 3px;margin:0 0 -1px;
+    letter-spacing:.8px;background:none;display:flex}
+  .blkh svg{display:none}
+  .blkh .n{display:none}
+  .fields,.fields.c3,.opts,.opts.c3{display:grid;grid-template-columns:repeat(2,1fr);gap:0;
+    border-top:var(--pl);border-left:var(--pl)}
+  .opts+.opts,.opts+.fields,.fields+.opts,.fields+.fields{border-top:0}
+  .field.wide{grid-column:1/-1}
+  .field{display:flex;align-items:baseline;height:var(--rh);gap:4px;padding:4px var(--px) 0;
+    border-right:var(--pl);border-bottom:var(--pl)}
+  .lbl{flex:0 0 38%;overflow:hidden;text-overflow:ellipsis}
+  input,select{flex:1;min-width:0}
+  .field.wide{grid-column:1/-1}
+  .lbl{color:#777;font-size:4.8pt;line-height:1;letter-spacing:.2px;white-space:nowrap}
+  input,select{background:none;color:#000;border:0;border-radius:0;height:9px;padding:0;
+    line-height:9px;font-family:var(--mono);font-size:6pt}
+  .mono{font-size:6.2pt}
+  .field.dt input{display:none}
+  .field.dt .dv{display:block;flex:1;font-family:var(--mono);font-size:6pt;line-height:9px}
+  input[type=date]::-webkit-calendar-picker-indicator{display:none}
+  input[type=date]:invalid::-webkit-datetime-edit{opacity:0}
+  select{background-image:none;padding-right:0}
+  .opt,.opt.on{background:none;border:0;border-radius:0;min-height:0;height:var(--rh);
+    padding:0 var(--px);font-size:5.6pt;gap:4px;line-height:1;align-items:center;
+    border-right:var(--pl);border-bottom:var(--pl)}
+  .opt>span:last-child{-webkit-line-clamp:1}
+  .box{width:7px;height:7px;min-width:7px;border:.45pt solid #000;border-radius:1px;color:#000;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .opt.on .box{background:#000;border:4px solid #000}
+  .box svg{display:none}
+  .opt.pad,.field.pad{visibility:visible}
+  .mxwrap{padding:0;overflow:visible;scrollbar-gutter:auto}
+  .mx.wide{display:none}
+  .mx.tr{display:grid;width:100%;min-width:0;gap:0}
+  .mx.tr .mxrow{grid-template-columns:1fr repeat(4,32px);gap:0;
+    height:var(--rh);align-items:center;border-bottom:var(--pl)}
+  .mx.tr{border-left:var(--pl);border-top:var(--pl)}
+  .mx.tr .mxl.w{padding-left:var(--px)}
+  .mx.tr .mxrow{border-right:var(--pl)}
+  .mxh,.mx.tr .mxh{color:#000;font-size:5pt;height:var(--rh);align-items:center;font-weight:700;
+    font-family:var(--mono);justify-content:center}
+  .mxl,.mxl.w{color:#000;font-size:5.4pt;line-height:1}
+
+  .mx .cell,.mx.tr .cell{background:none;border:.45pt solid #000;border-radius:1px;
+    color:#000;width:100%;max-width:7px;height:auto;aspect-ratio:1;justify-self:center}
+  .mx .cell.on,.mx.tr .cell.on{background:#000;border:4px solid #000}
+  .cell svg{display:none}
+  textarea{background:none;color:#000;border:0;border-radius:0;
+    font-family:var(--mono);min-height:26px;padding:0;font-size:5.8pt;width:100%;resize:none}
+  .field.ta{display:grid;height:auto;padding:3px var(--px) 4px;grid-template-rows:auto auto;
+    gap:3px;width:100%;border-right:var(--pl);border-bottom:var(--pl)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .grid2>*{border-right:var(--pl);padding:0 var(--px)}
+  .grid2>*:last-child{border-right:0}
+  .sigs{margin-top:0}
+  .sigrow{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .sigrow{border:var(--pl);border-radius:4px;overflow:hidden}
+  .sigcell{height:16mm;padding:3px var(--px)}
+  .sigcell+.sigcell{border-left:var(--pl)}
+  .qrblk{width:26mm;margin:0;border:0;overflow:hidden}
+  .qrblk .blkh{display:none}
+  .qrbox{display:block}
+  .qrbox{padding:0}
+  .qrbox svg{width:26mm;height:26mm;border-radius:0;border:0;display:block}
+  body.m-filled .chkblk:not(.has){display:none}
+  body.m-filled .opt:not(.on),body.m-filled .opt.pad,body.m-filled .field.mt,
+  body.m-filled .blk.mt{display:none}
+  body.m-filled .field.wide{grid-column:1/-1}
+  body.m-filled .mx.tr .mxrow:not(:has(.cell.on)):not(:first-child){display:none}
+  body:not(.pr-stick) #stickBlk{display:none}
+  body.pr-stick:not(.pr-card) #cols,body.pr-stick:not(.pr-card) #tail{display:none}
+  body.pr-card.pr-stick #stickBlk{break-before:page;page-break-before:always;margin-top:0}
+  body.pr-stick #stickBlk{display:block;border:0;padding:0;margin:0}
+  body.pr-stick #stickBlk .blkh{display:none}
+  body.pr-stick .sheet{grid-template-columns:repeat(2,52mm)!important;gap:0;justify-content:start;
+    border-top:.5pt dashed #000;border-left:.5pt dashed #000;width:max-content}
+  body.pr-stick .sheet:has(>:only-child){grid-template-columns:52mm!important}
+  body.pr-stick .sheet>*:nth-child(n+2){display:grid}
+  body.pr-stick .stick{background:#fff;border:0;border-right:.5pt dashed #000;
+    border-bottom:.5pt dashed #000;border-radius:0;
+    width:52mm;height:30mm;padding:2mm;gap:1mm;break-inside:avoid;margin:0;
+    align-content:space-between}
+  body.pr-stick .s-top{height:auto}
+  body.pr-stick .s-sn{font-size:13pt;letter-spacing:.3px}
+  body.pr-stick .s-md{font-size:5pt;line-height:1.2}
+  body.pr-stick .s-who{font-size:6pt;min-height:0}
+  body.pr-stick .s-md,body.pr-stick .s-who{color:#000}
+  body.pr-stick .s-ft{color:#555}
+  body.pr-stick .s-who .r{color:#555}
+  body.pr-stick .s-grid{gap:.7mm}
+  body.pr-stick .s-c{background:#fff;border:var(--pl);border-radius:1px;height:3.8mm;
+    font-size:5pt;line-height:1;align-items:center;padding:0 .7mm;gap:.7mm;
+    overflow:hidden;white-space:nowrap}
+  body.pr-stick .s-c .box{border-color:#000;border-radius:0;width:5px;height:5px;min-width:5px}
+  body.pr-stick .s-ft{font-size:4.6pt}
+  body.pr-stick .s-c.on .box{background:#000;border:2.5px solid #000}
+  body.m-filled.pr-stick .s-grid{display:none}
+  body.m-filled.pr-stick .s-list{display:flex;flex-wrap:wrap;gap:1.4mm;align-content:flex-start}
+  body.pr-stick .s-i{border:var(--pl);border-radius:1px;padding:.4mm .8mm;font-size:5pt;
+    line-height:1;align-items:center;white-space:nowrap;gap:.7mm}
+  body.pr-stick .s-i .box{width:5px;height:5px;min-width:5px;border-radius:0;border:.5pt solid #000}
+  body.pr-stick .s-i.on .box{background:#000;border:2.5px solid #000}
+  body.m-filled.pr-stick .s-list{gap:.7mm}
+  body.pr-stick .s-md .st{color:#000}
+  body.pr-stick .s-c{border:.5pt solid #000}
+}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-drone" viewBox="0 0 24 24"><path d="M4 4h4v4H4zM16 4h4v4h-4zM4 16h4v4H4zM16 16h4v4h-4zM8 8l3 3M16 8l-3 3M8 16l3-3M16 16l-3-3"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20h1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6.5"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 19H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="7" y="15" width="10" height="6" rx="1"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 8v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/><path d="M7 10h6M7 14h4"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v13M8 7l4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8.5 6l1.5-2h4l1.5 2"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 14h10"/></symbol>
+  <symbol id="i-body" viewBox="0 0 24 24"><path d="M5 8h14l1.5 8H3.5z"/><path d="M8 8V5h8v3"/></symbol>
+  <symbol id="i-arm" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 8.5 15 15"/></symbol>
+  <symbol id="i-gimbal" viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M4 13a8 8 0 0 1 16 0M12 3v3"/></symbol>
+  <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 5h9l2 3h5v11H4z"/><circle cx="12.5" cy="13" r="3.5"/></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></symbol>
+  <symbol id="i-case" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17.5v.01"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a4 4 0 0 0 5.7.4l3-3A4 4 0 0 0 13 5l-1.7 1.7"/><path d="M14 11a4 4 0 0 0-5.7-.4l-3 3A4 4 0 0 0 11 19l1.7-1.7"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+</svg>
+
+<header>
+  <div class="hbar">
+    <div class="logo"><svg><use href="#i-drone"/></svg><b>Картка пошкодження</b></div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="bScan" title="Сканувати QR"><svg><use href="#i-qr"/></svg></button>
+    <a class="iconbtn noprint" href="/list" title="Реєстр карток"><svg><use href="#i-list"/></svg></a>
+    <button class="iconbtn" id="bShare" title="Поділитися"><svg><use href="#i-share"/></svg></button>
+    <button class="iconbtn" id="bPrint" title="Друк картки A4"><svg><use href="#i-print"/></svg></button>
+  </div>
+</header>
+
+<div id="root">
+  <div class="wrap">
+    <div class="blk noprint" id="scanBlk">
+      <div class="blkh"><svg><use href="#i-qr"/></svg>Сканування</div>
+      <div class="cam" id="cam">
+        <video id="vid" playsinline muted></video>
+        <div class="frame" id="frame" hidden></div>
+        <div class="camoff" id="camoff">Наведіть камеру на QR або серійний номер</div>
+      </div>
+      <div class="snrow">
+        <input id="sn0" class="mono" placeholder="Серійний номер" autocomplete="off" autofocus>
+        <button class="btn pri" id="bGo">Відкрити</button>
+      </div>
+      <div class="scan3">
+        <button class="btn" id="bStart"><svg><use href="#i-qr"/></svg>Камера</button>
+        <button class="btn" id="bFile"><svg><use href="#i-file"/></svg>QR з файлу</button>
+        <button class="btn" id="bOpen"><svg><use href="#i-file"/></svg>Файл картки</button>
+      </div>
+      <input type="file" id="file" accept="image/*" hidden>
+      <input type="file" id="json" accept="application/json,.json" hidden>
+    </div>
+    <div id="card" hidden></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ── QR: byte mode, рівень M, версії 1..40 ── */
+var QR=(function(){
+  var EXP=[],LOG=[];
+  (function(){ var x=1; for(var i=0;i<255;i++){ EXP[i]=x; LOG[x]=i; x=x<<1; if(x&256) x^=285; } })();
+  function mul(a,b){ return (a&&b)?EXP[(LOG[a]+LOG[b])%255]:0; }
+  var ECC=[0,10,16,26,18,24,16,18,22,22,26,30,22,22,24,24,28,28,26,26,26,26,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28];
+  var BLK=[0,1,1,1,2,2,4,4,4,5,5,5,8,9,9,10,10,11,13,14,16,17,17,18,20,21,23,25,26,28,29,31,33,35,37,38,40,43,45,47,49];
+  function rawModules(v){
+    var r=(16*v+128)*v+64;
+    if(v>=2){ var n=Math.floor(v/7)+2; r-=(25*n-10)*n-55; if(v>=7) r-=36; }
+    return r;
+  }
+  function dataCw(v){ return Math.floor(rawModules(v)/8)-ECC[v]*BLK[v]; }
+  function alignPos(v){
+    if(v===1) return [];
+    var n=Math.floor(v/7)+2, size=v*4+17,
+        step=(v===32)?26:Math.ceil((v*4+4)/(n*2-2))*2, r=[6];
+    for(var pos=size-7;r.length<n;pos-=step) r.splice(1,0,pos);
+    return r;
+  }
+  function genPoly(d){
+    var r=[1];
+    for(var i=0;i<d;i++){
+      r.push(0);
+      for(var j=r.length-1;j>0;j--) r[j]=r[j-1]^mul(r[j],EXP[i]);
+      r[0]=mul(r[0],EXP[i]);
+    }
+    return r;
+  }
+  function rs(data,d){
+    var g=genPoly(d).slice(0,d).reverse(),res=new Array(d).fill(0);
+    for(var i=0;i<data.length;i++){
+      var f=data[i]^res[0];
+      res.shift(); res.push(0);
+      for(var j=0;j<d;j++) res[j]^=mul(g[j],f);
+    }
+    return res;
+  }
+  function utf8(str){
+    var e=unescape(encodeURIComponent(str)),b=[];
+    for(var i=0;i<e.length;i++) b.push(e.charCodeAt(i));
+    return b;
+  }
+  function fmtBits(data){
+    var rem=data;
+    for(var i=0;i<10;i++) rem=((rem<<1)^(((rem>>>9)&1)*0x537))&0x7FF;
+    return ((data<<10)|(rem&0x3FF))^0x5412;
+  }
+  function verBits(v){
+    var rem=v;
+    for(var i=0;i<12;i++) rem=((rem<<1)^(((rem>>>11)&1)*0x1F25))&0x1FFF;
+    return (v<<12)|(rem&0xFFF);
+  }
+  function build(text){
+    var bytes=utf8(text),v,cap;
+    for(v=1;v<=40;v++){
+      var cc=(v<10)?8:16;
+      cap=dataCw(v)*8;
+      if(4+cc+bytes.length*8<=cap) break;
+    }
+    if(v>40) return null;
+    var cc=(v<10)?8:16,bits=[];
+    function put(val,n){ for(var i=n-1;i>=0;i--) bits.push((val>>>i)&1); }
+    put(4,4); put(bytes.length,cc);
+    for(var i=0;i<bytes.length;i++) put(bytes[i],8);
+    var total=dataCw(v)*8;
+    put(0,Math.min(4,total-bits.length));
+    while(bits.length%8) bits.push(0);
+    var pad=[0xEC,0x11],k=0;
+    while(bits.length<total){ put(pad[k++&1],8); }
+    var dat=[];
+    for(i=0;i<bits.length;i+=8){
+      var b=0; for(var j=0;j<8;j++) b=(b<<1)|bits[i+j];
+      dat.push(b);
+    }
+    /* блоки */
+    var nb=BLK[v],ecw=ECC[v],shortLen=Math.floor(dat.length/nb),longCount=dat.length%nb;
+    var blocks=[],eccs=[],off=0;
+    for(i=0;i<nb;i++){
+      var len=shortLen+(i>=nb-longCount?1:0),blk=dat.slice(off,off+len);
+      off+=len; blocks.push(blk); eccs.push(rs(blk,ecw));
+    }
+    var out=[];
+    for(i=0;i<shortLen+1;i++)
+      for(var b2=0;b2<nb;b2++)
+        if(i<blocks[b2].length) out.push(blocks[b2][i]);
+    for(i=0;i<ecw;i++)
+      for(b2=0;b2<nb;b2++) out.push(eccs[b2][i]);
+    /* матриця */
+    var size=v*4+17,m=[],fn=[];
+    for(i=0;i<size;i++){ m.push(new Array(size).fill(0)); fn.push(new Array(size).fill(0)); }
+    function set(x,y,val){ if(x<0||y<0||x>=size||y>=size) return; m[y][x]=val?1:0; fn[y][x]=1; }
+    function finder(cx,cy){
+      for(var dy=-4;dy<=4;dy++) for(var dx=-4;dx<=4;dx++){
+        var d=Math.max(Math.abs(dx),Math.abs(dy));
+        set(cx+dx,cy+dy,d!==2&&d!==4);
+      }
+    }
+    finder(3,3); finder(size-4,3); finder(3,size-4);
+    for(i=8;i<size-8;i++){ set(6,i,i%2===0); set(i,6,i%2===0); }
+    var ap=alignPos(v);
+    for(i=0;i<ap.length;i++) for(var j2=0;j2<ap.length;j2++){
+      if((i===0&&j2===0)||(i===0&&j2===ap.length-1)||(i===ap.length-1&&j2===0)) continue;
+      for(var dy=-2;dy<=2;dy++) for(var dx=-2;dx<=2;dx++)
+        set(ap[j2]+dx,ap[i]+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1);
+    }
+    /* резерв під формат/версію */
+    for(i=0;i<9;i++){ if(i!==6){ set(i,8,0); set(8,i,0); } }
+    for(i=0;i<8;i++){ set(size-1-i,8,0); set(8,size-1-i,0); }
+    set(8,size-8,1);
+    if(v>=7){
+      var vb=verBits(v);
+      for(i=0;i<18;i++){
+        var bit=(vb>>>i)&1,a=Math.floor(i/3),b3=i%3+size-11;
+        set(a,b3,bit); set(b3,a,bit);
+      }
+    }
+    /* дані зигзагом */
+    var idx=0,bitIdx=0;
+    for(var right=size-1;right>=1;right-=2){
+      if(right===6) right=5;
+      for(var vert=0;vert<size;vert++){
+        for(var jj=0;jj<2;jj++){
+          var x=right-jj,upward=((right+1)&2)===0,y=upward?size-1-vert:vert;
+          if(!fn[y][x]){
+            var bit2=0;
+            if(idx<out.length*8){ bit2=(out[idx>>>3]>>>(7-(idx&7)))&1; idx++; }
+            m[y][x]=bit2;
+          }
+        }
+      }
+    }
+    /* маска */
+    function maskFn(k,x,y){
+      switch(k){
+        case 0: return (x+y)%2===0;
+        case 1: return y%2===0;
+        case 2: return x%3===0;
+        case 3: return (x+y)%3===0;
+        case 4: return (Math.floor(y/2)+Math.floor(x/3))%2===0;
+        case 5: return (x*y)%2+(x*y)%3===0;
+        case 6: return ((x*y)%2+(x*y)%3)%2===0;
+        default:return ((x+y)%2+(x*y)%3)%2===0;
+      }
+    }
+    function fmt(mask){
+      var b=fmtBits((0<<3)|mask),i;
+      function g(k){ return (b>>>k)&1; }
+      for(i=0;i<=5;i++) set(8,i,g(i));
+      set(8,7,g(6)); set(8,8,g(7)); set(7,8,g(8));
+      for(i=9;i<15;i++) set(14-i,8,g(i));
+      for(i=0;i<8;i++) set(size-1-i,8,g(i));
+      for(i=8;i<15;i++) set(8,size-15+i,g(i));
+      set(8,size-8,1);
+    }
+    function penalty(){
+      var p=0,i,j;
+      for(i=0;i<size;i++){
+        var rc=1,cc2=1;
+        for(j=1;j<size;j++){
+          rc=(m[i][j]===m[i][j-1])?rc+1:1; if(rc===5)p+=3; else if(rc>5)p++;
+          cc2=(m[j][i]===m[j-1][i])?cc2+1:1; if(cc2===5)p+=3; else if(cc2>5)p++;
+        }
+      }
+      for(i=0;i<size-1;i++) for(j=0;j<size-1;j++){
+        var c=m[i][j];
+        if(c===m[i][j+1]&&c===m[i+1][j]&&c===m[i+1][j+1]) p+=3;
+      }
+      var dark=0;
+      for(i=0;i<size;i++) for(j=0;j<size;j++) dark+=m[i][j];
+      p+=Math.floor(Math.abs(dark*20-size*size*10)/(size*size))*10;
+      return p;
+    }
+    var base=[];
+    for(i=0;i<size;i++) base.push(m[i].slice());
+    var best=null,bestP=1e9;
+    for(var mk=0;mk<8;mk++){
+      for(i=0;i<size;i++) m[i]=base[i].slice();
+      for(i=0;i<size;i++) for(j2=0;j2<size;j2++)
+        if(!fn[i][j2]&&maskFn(mk,j2,i)) m[i][j2]^=1;
+      fmt(mk);
+      var pn=penalty();
+      if(pn<bestP){ bestP=pn; best=m.map(function(r){ return r.slice(); }); }
+    }
+    return {size:size,mods:best};
+  }
+  function svg(text,px){
+    var q=build(text); if(!q) return '';
+    var n=q.size,b=4,t=n+b*2,d='';
+    for(var y=0;y<n;y++){
+      var x=0;
+      while(x<n){
+        if(q.mods[y][x]){
+          var w=1; while(x+w<n&&q.mods[y][x+w]) w++;
+          d+='M'+(x+b)+' '+(y+b)+'h'+w+'v1h-'+w+'z'; x+=w;
+        } else x++;
+      }
+    }
+    return '<svg class="qrsvg" viewBox="0 0 '+t+' '+t+'" width="'+px+'" height="'+px+'" '+
+      'shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">'+
+      '<rect width="'+t+'" height="'+t+'" fill="#fff" stroke="none"/>'+
+      '<path d="'+d+'" fill="#000" stroke="none"/></svg>';
+  }
+  return {svg:svg};
+})();
+
+/* ── довідники ───────────────────────────────────────────────── */
+var MODELS={m3t:'DJI Mavic 3T',m3p:'DJI Mavic 3 Pro',m30t:'DJI Matrice 30T',evo:'Autel EVO MAX 4T'};
+var SHORT={m3t:'MAVIC 3T',m3p:'MAVIC 3 PRO',m30t:'MATRICE 30T',evo:'EVO MAX 4T'};
+var SN2MODEL={
+ '1581F5FJC244P00D6Z39':'m3t','1581F5FJC243K00DY322':'m3t',
+ '158F67QC249T0145H54':'m3p','1581F67QC249T0145H2V':'m3p',
+ '1581F5BKD238700E1966':'m30t','1581F5BKD238A00EM103':'m30t','1581F5BKD237F00EVJC8':'m30t',
+ '1748FEV3HMA923171199':'evo'};
+var ALL=['m3t','m3p','m30t','evo'];
+function only(){ return Array.prototype.slice.call(arguments); }
+
+var BLOCKS=[
+ {id:'st',t:'Стан при прийманні',ic:'i-alert',s:'Стан',items:[
+  ['nopwr','Не вмикається',ALL],['selftest','Помилка самотесту',ALL],
+  ['nofly','Не злітає',ALL],['unstable','Нестабільний політ',ALL],
+  ['fall','Падіння',ALL],['impact','Удар',ALL],
+  ['hit','Влучання',ALL],['debris','Уламки',ALL],
+  ['water','Потрапляння води',ALL],['burn','Перегрів',ALL],
+  ['melt','Оплавлення',ALL],['link','Втрата зв\'язку',ALL],
+  ['imu','Збій IMU',ALL],['comp','Збій компаса',ALL],
+  ['gps','Збій GPS/RTK',ALL],['vib','Вібрація',ALL],
+  ['noise','Сторонній шум',ALL]]},
+ {id:'bd',t:'Корпус',ic:'i-body',s:'Корпус',items:[
+  ['mid','Середня частина',ALL],['top','Верхня кришка',ALL],
+  ['bot','Нижня частина',ALL],['front','Передня накладка',only('m30t','evo')],
+  ['batbay','Батарейний відсік',only('m30t','evo')],['glass','Скло сенсора',ALL],
+  ['rad','Радіатор',only('m30t','evo')],['vent','Вентилятор',only('m30t','evo')],
+  ['legs','Посадкові опори',only('m30t','evo')],['label','Маркування S/N',ALL]]},
+ {id:'gm',t:'Підвіс',ic:'i-gimbal',s:'Підвіс',items:[
+  ['yawm','YAW двигун',ALL],['pitm','PITCH двигун',ALL],['rolm','ROLL двигун',ALL],
+  ['yawb','YAW кронштейн',ALL],['prb','PITCH/ROLL кронштейн',ALL],
+  ['flex','Шлейф підвісу',ALL],['damp','Демпферна площадка',ALL],
+  ['shock','Амортизатори',ALL],['esc','ESC стабілізатора',only('m30t')]]},
+ {id:'cm',t:'Камера',ic:'i-cam',s:'Камера',items:[
+  ['gimb','Камера в зборі',ALL],['vplate','Відеоплата',ALL],
+  ['wide','Ширококутна камера',ALL],['zoom','ZOOM камера',ALL],
+  ['ir','Тепловізійний модуль',only('m3t','m30t','evo')],
+  ['lrf','Лазерний далекомір',only('m30t','evo')],
+  ['lens','Оптика',ALL],['cglass','Захисне скло',ALL]]},
+ {id:'el',t:'Електроніка',ic:'i-chip',s:'Електроніка',items:[
+  ['mb','Материнська плата',ALL],['pwr','Плата живлення',ALL],
+  ['escm','ESC двигунів',ALL],['gnss','Модуль GNSS',ALL],
+  ['radio','Модуль радіозв\'язку',ALL],['ant','Антенні кабелі',ALL],
+  ['obs','Датчики перешкод',ALL],['down','Нижні сенсори висоти',ALL],
+  ['led','Бортові вогні',ALL],['spk','Гучномовець',only('m30t')],
+  ['spot','Прожектор',only('m30t')],['sd','Карта пам\'яті',ALL]]},
+ {id:'kit',t:'Комплект',ic:'i-case',s:'Комплект',items:[
+  ['bat','Акумулятор',ALL],['charge','Зарядний хаб',ALL],['psu','Блок живлення',ALL],
+  ['rc','Пульт',ALL],['rcscr','Екран пульта',ALL],
+  ['rcant','Антени пульта',ALL],['props','Пропелери',ALL],
+  ['cable','Кабелі',ALL],['case','Кейс',ALL]]}
+];
+var ARMCOLS=[
+ ['beam','Промінь',ALL],['mot','Двигун',ALL],['prop','Пропелер',ALL],
+ ['fold','Механізм розкладання',ALL],['sens','Датчик розкладання',only('m30t')],
+ ['wire','Силова проводка',only('m30t','evo')],['mount','Кріплення двигуна',ALL],
+ ['rtk','Антена RTK',only('m30t')]];
+var ABBR={1:'ПП',2:'ПЛ',3:'ЗЛ',4:'ЗП'};
+var VERDICT=['Діагностика','Ремонт','Заміна вузлів','Списання'];
+var STATUS=[['fix','Відновлено'],['out','Не підлягає ремонту']];
+var STLBL={fix:'ВІДНОВЛЕНО',out:'НЕ ПІДЛЯГАЄ'};
+var TEXTF=['sn','bort','hours','date','unit','holder','callsign','post','holderPhone',
+           'basis','note','status','done','doneBy','techPhone','act'];
+
+var S={sn:'',model:'',bort:'',hours:'',date:'',unit:'',holder:'',callsign:'',post:'',
+       holderPhone:'',basis:'',note:'',
+       status:'',done:'',doneBy:'',techPhone:'',act:'',pm:'fil',kCard:1,kStick:1,chk:{},ph:[]};
+
+function $(s){ return document.querySelector(s); }
+function esc(v){ return String(v==null?'':v).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function toast(t){ var e=$('#toast'); e.textContent=t; e.style.display='block';
+  clearTimeout(toast.t); toast.t=setTimeout(function(){ e.style.display='none'; },2200); }
+function fmtDate(v){
+  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(v||''));
+  return m?m[3]+'.'+m[2]+'.'+m[1]:'';
+}
+function today(){ var d=new Date(),p=function(n){ return (n<10?'0':'')+n; };
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+function fits(m,l){ return !m||l.indexOf(m)>=0; }
+function cnt(pfx){ var n=0; for(var k in S.chk){ if(S.chk[k]&&k.indexOf(pfx+'.')===0) n++; } return n; }
+function armCnt(i){ var n=0; for(var k in S.chk){ if(S.chk[k]&&k.indexOf('arm.'+i)===0) n++; } return n; }
+
+/* ── рендер ──────────────────────────────────────────────────── */
+function render(){
+  var m=S.model,h='';
+  h+='<div id="cols">';
+  h+=blk('i-drone','Виріб','',
+    '<div class="fields c3">'+
+     fld('S/N','<input id="f-sn" class="mono" value="'+esc(S.sn)+'">','wide')+
+     fld('Модель','<select id="f-model">'+opt('','—',m)+Object.keys(MODELS).map(function(k){
+        return opt(k,MODELS[k],m); }).join('')+'</select>')+
+     fld('Борт','<input id="f-bort" value="'+esc(S.bort)+'">')+
+     fld('Наліт, год','<input id="f-hours" inputmode="decimal" value="'+esc(S.hours)+'">')+
+     fld('Прийнято','<input id="f-date" type="date" required value="'+esc(S.date)+'">'+
+        '<span class="dv"></span>','dt')+
+     fld('Закріплено за','<input id="f-holder" value="'+esc(S.holder)+'">')+
+     fld('Позивний','<input id="f-callsign" value="'+esc(S.callsign)+'">')+
+     fld('Посада','<input id="f-post" value="'+esc(S.post)+'">')+
+     fld('Підрозділ','<input id="f-unit" value="'+esc(S.unit)+'">')+
+     fld('Телефон','<input id="f-holderPhone" inputmode="tel" value="'+esc(S.holderPhone)+'">')+
+     fld('Підстава','<input id="f-basis" value="'+esc(S.basis)+'">')+
+    '</div>');
+
+  var an=armCnt(1)+armCnt(2)+armCnt(3)+armCnt(4);
+  h+=blk('i-arm','Промені та мотори',an,'<div class="mxwrap">'+armMatrix(m)+'</div>',
+    'chkblk'+(an?' has':''));
+
+  BLOCKS.forEach(function(b){
+    var it=b.items.filter(function(x){ return fits(m,x[2]); });
+    if(!it.length) return;
+    h+=blk(b.ic,b.t,cnt(b.id),'<div class="opts">'+pad(it.map(function(x){
+      return chk(b.id+'.'+x[0],x[1]); }).join(''),it.length)+'</div>',
+      'chkblk'+(cnt(b.id)?' has':''));
+  });
+
+  h+=blk('i-alert','Висновок',cnt('vd'),
+    '<div class="opts">'+VERDICT.map(function(v,i){ return chk('vd.'+i,v); }).join('')+
+      '<div class="field ta full"><span class="lbl">Опис пошкоджень</span>'+
+      '<textarea id="f-note">'+esc(S.note)+'</textarea></div>'+
+    '</div>');
+
+  var dmg=damaged();
+  h+='</div><div id="tail">';
+  h+='<div class="blk" id="doneBlk"><div class="blkh"><svg><use href="#i-check"/></svg>Виконання'+
+     '<span class="n">'+cnt('fx')+'/'+dmg.length+'</span></div>'+
+    ('<div class="opts">'+pad(STATUS.map(function(v){
+      return '<div class="opt'+(S.status===v[0]?' on':'')+'" data-st="'+v[0]+'" role="radio" tabindex="0" aria-checked="'+(S.status===v[0])+'">'+
+        '<span class="box"><svg><use href="#i-check"/></svg></span><span>'+v[1]+'</span></div>'; }).join(''),STATUS.length)+'</div>'+
+    '<div class="fields">'+
+      fld('Завершено','<input id="f-done" type="date" required value="'+esc(S.done)+'">'+
+        '<span class="dv"></span>','dt')+
+      fld('Технік','<input id="f-doneBy" value="'+esc(S.doneBy)+'">')+
+      fld('Телефон техніка','<input id="f-techPhone" inputmode="tel" value="'+esc(S.techPhone)+'">')+
+      fld('Акт робіт','<input id="f-act" value="'+esc(S.act)+'">')+
+    '</div>'+
+    fixList())+'</div>';
+
+  h+='<div class="blk sigs"><div class="blkh"><svg><use href="#i-user"/></svg>Підписи</div>'+
+     '<div class="sigrow">'+
+     '<div class="sigcell"><span class="lbl">Здав: ПІБ, підпис, дата</span></div>'+
+     '<div class="sigcell"><span class="lbl">Прийняв: ПІБ, підпис, дата</span></div>'+
+     '</div></div>';
+
+  h+=blk('i-qr','QR','','<div class="qrbox" id="qrbox">'+QR.svg(payload(),150)+'</div>','qrblk');
+  h+='</div>';
+  h+='<div class="blk" id="stickBlk"><div class="blkh"><svg><use href="#i-tag"/></svg>Стікер'+
+     '</div><div class="sheet">'+sheet()+'</div></div>';
+
+  h+='<div class="blk noprint"><div class="blkh"><svg><use href="#i-print"/></svg>Друк</div>'+
+     '<div class="field"><span class="lbl">Що друкувати</span>'+
+       '<div class="opts c2">'+
+         '<div class="opt'+(S.kCard?' on':'')+'" data-pk="kCard" role="checkbox" tabindex="0" aria-checked="'+(!!S.kCard)+'">'+
+           '<span class="box"><svg><use href="#i-check"/></svg></span><span>Картка A4</span></div>'+
+         '<div class="opt'+(S.kStick?' on':'')+'" data-pk="kStick" role="checkbox" tabindex="0" aria-checked="'+(!!S.kStick)+'">'+
+           '<span class="box"><svg><use href="#i-check"/></svg></span><span>Аркуш стікерів</span></div>'+
+       '</div></div>'+
+     '<div class="field"><span class="lbl">Обсяг</span>'+
+       '<div class="opts c2">'+
+         rdo('tpl','Весь шаблон')+rdo('fil','Тільки заповнене')+
+       '</div></div>'+
+     '<div class="seg2">'+
+       '<button class="btn pri" id="bPrint2"><svg><use href="#i-print"/></svg>Друк</button>'+
+       '<button class="btn" id="bShare2"><svg><use href="#i-share"/></svg>Поділитися</button></div>'+
+     '<div class="seg2">'+
+       '<button class="btn" id="bCfg"><svg><use href="#i-file"/></svg>Зберегти конфіг</button>'+
+       '<button class="btn" id="bClear"><svg><use href="#i-x"/></svg>Очистити</button></div></div>';
+
+  document.title=fname();
+  var c=$('#card'); c.innerHTML=h; c.hidden=false; $('#scanBlk').hidden=true;
+  bind();
+}
+function blk(ic,t,n,body,cls){
+  return '<div class="blk'+(cls?' '+cls:'')+'"><div class="blkh"><svg><use href="#'+ic+'"/></svg>'+t+
+    '<span class="n">'+(n===''?'':n)+'</span></div>'+body+'</div>';
+}
+function fld(l,inp,cls){ return '<label class="field'+(cls?' '+cls:'')+'"><span class="lbl">'+l+'</span>'+inp+'</label>'; }
+function opt(v,t,cur){ return '<option value="'+v+'"'+(cur===v?' selected':'')+'>'+t+'</option>'; }
+function rdo(v,t){
+  return '<div class="opt rad'+(S.pm===v?' on':'')+'" data-pm="'+v+'" role="radio" tabindex="0" aria-checked="'+(S.pm===v)+'">'+
+    '<span class="box"><i></i></span><span>'+t+'</span></div>';
+}
+function padf(html,n){
+  return html+((n%2)?'<div class="field pad"></div>':'');
+}
+function pad(html,n){
+  var k=(2-n%2)%2,r=html;
+  while(k--) r+='<div class="opt pad"></div>';
+  return r;
+}
+function chk(id,t){ return '<div class="opt'+(S.chk[id]?' on':'')+'" data-k="'+id+'" role="checkbox" tabindex="0" aria-checked="'+(!!S.chk[id])+'">'+
+  '<span class="box"><svg><use href="#i-check"/></svg></span><span>'+t+'</span></div>'; }
+function shortName(k){
+  var a=k.split('.');
+  if(a[0]==='arm'){
+    var c=ARMCOLS.filter(function(x){ return x[0]===a[2]; })[0];
+    return 'М'+a[1]+'-'+ABBR[a[1]]+' '+(c?c[1]:a[2]);
+  }
+  return nameOf(k);
+}
+function nameOf(k){
+  var a=k.split('.');
+  if(a[0]==='arm'){
+    var c=ARMCOLS.filter(function(x){ return x[0]===a[2]; })[0];
+    return 'М'+a[1]+' · '+(c?c[1]:a[2]);
+  }
+  var b=BLOCKS.filter(function(x){ return x.id===a[0]; })[0];
+  if(!b) return k;
+  var it=b.items.filter(function(x){ return x[0]===a[1]; })[0];
+  return (it?it[1]:a[1]);
+}
+function fixList(){
+  var d=damaged();
+  return '<div class="opts fx">'+(d.length?pad(d.map(function(k){
+    return chk('fx.'+k,nameOf(k)); }).join(''),d.length):'')+'</div>';
+}
+function refreshDone(){
+  var b=$('#doneBlk'); if(!b) return;
+  b.querySelector('.opts.fx').outerHTML=fixList();
+  b.querySelector('.blkh .n').textContent=cnt('fx')+'/'+damaged().length;
+}
+function damaged(){
+  var r=[];
+  for(var k in S.chk){ if(S.chk[k]&&k.indexOf('vd.')&&k.indexOf('fx.')) r.push(k); }
+  return r.sort();
+}
+function armMatrix(m){
+  var cols=ARMCOLS.filter(function(c){ return fits(m,c[2]); }),i,h;
+  function cell(i,c){
+    var k='arm.'+i+'.'+c[0];
+    return '<div class="cell'+(S.chk[k]?' on':'')+'" data-k="'+k+'" role="checkbox" tabindex="0" aria-label="М'+i+' '+c[1]+'" aria-checked="'+(!!S.chk[k])+'"><svg><use href="#i-check"/></svg></div>';
+  }
+  h='<div class="mx tr" style="--mxc:96px repeat(4,minmax(0,1fr))">';
+  h+='<div class="mxrow"><div class="mxh"></div>';
+  for(i=1;i<=4;i++) h+='<div class="mxh">М'+i+'-'+ABBR[i]+'</div>';
+  h+='</div>';
+  cols.forEach(function(c){
+    h+='<div class="mxrow"><div class="mxl w">'+c[1]+'</div>';
+    for(i=1;i<=4;i++) h+=cell(i,c);
+    h+='</div>';
+  });
+  h+='</div>';
+  h+='<div class="mx wide" style="--mxn:'+cols.length+';--mxc:54px repeat('+cols.length+',minmax(56px,1fr))">';
+  h+='<div class="mxrow"><div class="mxh"></div>'+cols.map(function(c){
+     return '<div class="mxh">'+c[1]+'</div>'; }).join('')+'</div>';
+  for(i=1;i<=4;i++){
+    h+='<div class="mxrow"><div class="mxl">М'+i+'-'+ABBR[i]+'</div>'+cols.map(function(c){
+      return cell(i,c); }).join('')+'</div>';
+  }
+  return h+'</div>';
+}
+function stick(){
+  var cells=[];
+  for(var i=1;i<=4;i++) cells.push(['М'+i+'-'+ABBR[i],armCnt(i)>0]);
+  ['bd','gm','cm','el'].forEach(function(id){
+    var b=BLOCKS.filter(function(x){ return x.id===id; })[0];
+    cells.push([b.s,cnt(id)>0]);
+  });
+  cells.push(['Інше',cnt('st')>0||cnt('kit')>0]);
+  return '<div class="stick">'+
+    '<div class="s-top"><span class="s-sn">'+esc((S.sn||'----').slice(-4))+'</span>'+
+      '<span class="s-md">'+esc(SHORT[S.model]||'')+'<br>'+
+        '<b class="st'+(S.status==='fix'?' ok':'')+'">'+esc(STLBL[S.status]||'')+'</b></span></div>'+
+    '<div class="s-who"><span>'+esc(S.holder||'')+'</span>'+
+      '<span class="r">'+esc(S.unit||'')+'</span></div>'+
+    '<div class="s-list">'+damaged().map(function(k){
+      return '<span class="s-i on"><span class="box"><svg><use href="#i-check"/></svg></span>'+
+        esc(shortName(k))+'</span>'; }).join('')+'</div>'+
+    '<div class="s-grid">'+cells.map(function(c){
+      return '<div class="s-c'+(c[1]?' on':'')+'"><span class="box"><svg><use href="#i-check"/></svg></span>'+c[0]+'</div>';
+    }).join('')+'</div>'+
+    '<div class="s-ft"><span>'+esc(S.sn||'')+'</span><span>'+esc(fmtDate(S.date))+'</span></div></div>';
+}
+
+
+function bind(){
+  TEXTF.forEach(function(k){ var e=$('#f-'+k); if(e) e.oninput=function(){
+    S[k]=e.value; save(); if(TECHF.indexOf(k)>=0) saveTech();
+    refreshStick(); refreshQR(); }; });
+  $('#f-model').onchange=function(){ S.model=this.value; save(); render(); };
+  var c=$('#card');
+  function act(e){
+    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm]');
+    if(!t) return;
+    if(t.dataset.k!==undefined){ flip(t); return; }
+    if(t.dataset.st!==undefined){
+      S.status=(S.status===t.dataset.st)?'':t.dataset.st; save();
+      [].forEach.call(t.parentNode.children,function(x){
+        var on=(x.dataset.st===S.status)&&!!S.status;
+        x.classList.toggle('on',on); x.setAttribute('aria-checked',on); });
+      refreshStick(); refreshQR(); return;
+    }
+    if(t.dataset.pk!==undefined){
+      S[t.dataset.pk]=S[t.dataset.pk]?0:1;
+      t.classList.toggle('on',!!S[t.dataset.pk]);
+      t.setAttribute('aria-checked',!!S[t.dataset.pk]); return;
+    }
+    if(t.dataset.pm!==undefined){
+      S.pm=t.dataset.pm;
+      [].forEach.call(t.parentNode.children,function(x){
+        x.classList.toggle('on',x===t); x.setAttribute('aria-checked',x===t); });
+    }
+  }
+  c.addEventListener('click',act);
+  c.addEventListener('keydown',function(e){
+    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm]');
+    if(t&&(e.key===' '||e.key==='Enter')){ e.preventDefault(); act({target:e.target}); } });
+  $('#bPrint2').onclick=printNow;
+  $('#bCfg').onclick=function(){ dl(cfgBlob(),fname()+'.json'); };
+  $('#bShare2').onclick=shareDlg;
+  $('#bClear').onclick=function(){ S.chk={}; S.note=''; save(); render(); };
+}
+function flip(t){
+  var k=t.dataset.k; S.chk[k]=!S.chk[k];
+  [].forEach.call(document.querySelectorAll('[data-k="'+k+'"]'),function(e){
+    e.classList.toggle('on',!!S.chk[k]); e.setAttribute('aria-checked',!!S.chk[k]); });
+  var n=t.closest('.blk').querySelector('.blkh .n');
+  if(n) n.textContent=(k.indexOf('arm.')===0)?(armCnt(1)+armCnt(2)+armCnt(3)+armCnt(4)):cnt(k.split('.')[0]);
+  var bl=t.closest('.blk');
+  if(bl&&bl.classList.contains('chkblk')){
+    var pfx=k.indexOf('arm.')===0?'arm':k.split('.')[0];
+    bl.classList.toggle('has',pfx==='arm'?!!(armCnt(1)+armCnt(2)+armCnt(3)+armCnt(4)):!!cnt(pfx));
+  }
+  save(); refreshDone(); refreshStick(); refreshQR();
+}
+function sheet(){
+  var h='',n=4;
+  for(var i=0;i<n;i++) h+=stick();
+  return h;
+}
+function refreshStick(){
+  var s=$('#stickBlk'); if(!s) return;
+  s.querySelector('.sheet').innerHTML=sheet();
+}
+
+/* ── конфіг: URL, файл, друк ─────────────────────────────────── */
+function payload(){
+  if(/^https?:$/.test(location.protocol)) return link();
+  var o={};
+  TEXTF.concat(['model']).forEach(function(k){ if(S[k]) o[k]=S[k]; });
+  o.c=[]; for(var k in S.chk){ if(S.chk[k]) o.c.push(k); }
+  return JSON.stringify(o);
+}
+function refreshQR(){
+  var b=$('#qrbox'); if(b) b.innerHTML=QR.svg(payload(),150);
+}
+function pack(){
+  var p=new URLSearchParams();
+  TEXTF.concat(['model']).forEach(function(k){ if(S[k]) p.set(k,S[k]); });
+  var on=[]; for(var k in S.chk){ if(S.chk[k]) on.push(k); }
+  if(on.length) p.set('c',on.join(','));
+  return p.toString();
+}
+function unpack(q){
+  var p=new URLSearchParams(q);
+  TEXTF.concat(['model']).forEach(function(k){ if(p.get(k)!=null) S[k]=p.get(k); });
+  S.chk={};
+  (p.get('c')||'').split(',').forEach(function(k){ if(k) S.chk[k]=true; });
+}
+function link(){ return location.origin+location.pathname+'#'+pack(); }
+var TECHF=['doneBy','techPhone'];
+function saveTech(){
+  var o={}; TECHF.forEach(function(k){ o[k]=S[k]; });
+  try{ localStorage.setItem('dc:tech',JSON.stringify(o)); }catch(e){}
+}
+function loadTech(){
+  try{ var o=JSON.parse(localStorage.getItem('dc:tech')||'{}');
+    TECHF.forEach(function(k){ if(!S[k]&&o[k]) S[k]=o[k]; });
+  }catch(e){}
+}
+function save(){
+  document.title=fname();
+  try{ history.replaceState(null,'','#'+pack()); }catch(e){}
+  try{ localStorage.setItem('dc:'+S.sn,pack()); }catch(e){}
+  sync();
+}
+/* ── синхронізація з сервером ────────────────────────────────── */
+/* Запис на сервер увімкнено лише після того, як для цього S/N
+   вирішено конфлікт (або його не було). Доки dirty=false —
+   локальні зміни на сервер не йдуть і нічого там не перетирають. */
+var syncT=0,dirty=false;
+function online(){ return /^https?:$/.test(location.protocol); }
+
+/* Знімок стану у форматі, який приймає сервер. */
+function snap(){
+  var o={};
+  TEXTF.forEach(function(k){ if(S[k]) o[k]=S[k]; });
+  var on=[]; for(var k in S.chk){ if(S.chk[k]) on.push(k); }
+  on.sort();
+  return {sn:S.sn,model:S.model,fields:o,checks:on};
+}
+/* Стан з рядка localStorage — без чіпання S. */
+function snapOf(q){
+  var p=new URLSearchParams(q),o={},mdl=p.get('model')||'';
+  TEXTF.forEach(function(k){ if(p.get(k)) o[k]=p.get(k); });
+  var on=(p.get('c')||'').split(',').filter(Boolean); on.sort();
+  return {sn:p.get('sn')||'',model:mdl,fields:o,checks:on};
+}
+/* Стан з відповіді сервера. */
+function snapOfCard(c){
+  var o={};
+  TEXTF.forEach(function(k){ if(c.fields&&c.fields[k]) o[k]=c.fields[k]; });
+  var on=(c.checks||[]).slice(); on.sort();
+  return {sn:c.sn||'',model:c.model||'',fields:o,checks:on};
+}
+/* Записати знімок у S. */
+function useSnap(n){
+  TEXTF.forEach(function(k){ S[k]=n.fields[k]||''; });
+  S.model=n.model||''; S.sn=n.sn||S.sn;
+  S.chk={}; n.checks.forEach(function(k){ S.chk[k]=true; });
+}
+
+function sync(){
+  if(!dirty||!S.sn||!online()) return;
+  clearTimeout(syncT);
+  syncT=setTimeout(function(){
+    fetch('/api/cards',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(snap())
+    }).then(function(r){ if(!r.ok) throw 0; })
+      .catch(function(){ toast('Не збережено на сервері'); });
+  },600);
+}
+
+/* ── порівняння двох знімків ─────────────────────────────────── */
+/* Повертає {same, conflicts:[{k,label,a,b}], merged}.
+   Розбіжність = обидві сторони мають НЕПОРОЖНЄ і різне значення.
+   Якщо одна сторона порожня — беремо непорожню (це доповнення, не конфлікт). */
+var FLBL={sn:'S/N',bort:'Бортовий номер',hours:'Наліт',date:'Дата',unit:'Підрозділ',
+ holder:'Власник',callsign:'Позивний',post:'Посада',holderPhone:'Телефон власника',
+ basis:'Підстава',note:'Примітка',status:'Статус',done:'Виконані роботи',
+ doneBy:'Виконав',techPhone:'Телефон техніка',act:'Акт',model:'Модель'};
+
+function diff(a,b){
+  var conf=[],m={fields:{},checks:[],model:'',sn:a.sn||b.sn};
+  ['model'].concat(TEXTF).forEach(function(k){
+    var av=(k==='model'?a.model:a.fields[k])||'',
+        bv=(k==='model'?b.model:b.fields[k])||'',val;
+    if(av&&bv&&av!==bv){ conf.push({k:k,label:FLBL[k]||k,a:av,b:bv}); val=av; }
+    else val=av||bv;
+    if(k==='model') m.model=val; else if(val) m.fields[k]=val;
+  });
+  /* Позначки об'єднуються — це доповнення, конфліктом не вважається. */
+  var set={};
+  a.checks.concat(b.checks).forEach(function(k){ set[k]=true; });
+  for(var k in set) m.checks.push(k);
+  m.checks.sort();
+  var onlyA=a.checks.filter(function(k){ return b.checks.indexOf(k)<0; }),
+      onlyB=b.checks.filter(function(k){ return a.checks.indexOf(k)<0; });
+  /* same лише коли жодна сторона не має того, чого немає в іншої —
+     інакше злиття щось додає, і взяти одну сторону означало б втрату. */
+  var adds=0;
+  ['model'].concat(TEXTF).forEach(function(k){
+    var av=(k==='model'?a.model:a.fields[k])||'',
+        bv=(k==='model'?b.model:b.fields[k])||'';
+    if(av!==bv&&(!av||!bv)) adds++;
+  });
+  return {conflicts:conf,merged:m,onlyA:onlyA,onlyB:onlyB,adds:adds,
+          same:!conf.length&&!onlyA.length&&!onlyB.length&&!adds};
+}
+function slug(v){
+  return String(v||'').trim().toUpperCase().replace(/\s+/g,'-')
+    .replace(/[^0-9A-Za-zА-Яа-яЇїІіЄєҐґ'\-]/g,'').replace(/-+/g,'-');
+}
+function fname(){
+  var sur=slug((S.holder||'').trim().split(/\s+/)[0]),
+      parts=[slug(SHORT[S.model]||'БПЛА'),slug(S.unit),sur,'КАРТКА-ПОШКОДЖЕНЬ'];
+  if(S.basis) parts.push(slug(S.basis));
+  return parts.filter(Boolean).join('_');
+}
+function markEmpty(){
+  [].forEach.call(document.querySelectorAll('#card .field.dt'),function(f){
+    var i=f.querySelector('input'),d=f.querySelector('.dv');
+    if(i&&d) d.textContent=fmtDate(i.value);
+  });
+  [].forEach.call(document.querySelectorAll('#card .field'),function(f){
+    var c=f.querySelector('input,select,textarea');
+    f.classList.toggle('mt',!!c&&!String(c.value||'').trim());
+  });
+  [].forEach.call(document.querySelectorAll('#cols .blk,#doneBlk'),function(b){
+    var has=b.querySelector('.opt.on,.cell.on')||
+      [].some.call(b.querySelectorAll('.field'),function(f){ return !f.classList.contains('mt'); });
+    b.classList.toggle('mt',!has);
+  });
+}
+function applyPrintMode(){
+  markEmpty();
+  document.body.className=((S.kCard||!S.kStick)?'pr-card ':'')+(S.kStick?'pr-stick ':'')+
+    (S.pm==='fil'?'m-filled':'');
+}
+function printNow(){
+  if(!S.kCard&&!S.kStick){ toast('Оберіть що друкувати'); return; }
+  applyPrintMode(); window.print();
+  setTimeout(function(){ document.body.className=''; },500);
+}
+window.addEventListener('beforeprint',applyPrintMode);
+window.addEventListener('afterprint',function(){ document.body.className=''; });
+
+
+function copy(txt){
+  if(navigator.clipboard&&window.isSecureContext){
+    navigator.clipboard.writeText(txt).then(function(){ toast('Скопійовано'); },fallback);
+  } else fallback();
+  function fallback(){
+    var t=document.createElement('textarea'); t.value=txt;
+    t.style.cssText='position:fixed;opacity:0'; document.body.appendChild(t);
+    t.select();
+    try{ document.execCommand('copy'); toast('Скопійовано'); }
+    catch(e){ prompt('Посилання',txt); }
+    document.body.removeChild(t);
+  }
+}
+function dl(blob,name){
+  var u=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=u; a.download=name; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); setTimeout(function(){ URL.revokeObjectURL(u); },1000);
+}
+function cfgBlob(){
+  var o={}; TEXTF.concat(['model']).forEach(function(k){ o[k]=S[k]; }); o.chk=S.chk;
+  return new Blob([JSON.stringify(o,null,1)],{type:'application/json'});
+}
+function shareDlg(){
+  var ov=document.createElement('div'); ov.className='ov noprint';
+  ov.innerHTML='<div class="dlg"><h3><svg style="width:17px;height:17px"><use href="#i-share"/></svg>Поділитися'+
+    '<button class="iconbtn" data-a="x"><svg><use href="#i-x"/></svg></button></h3>'+
+    '<button class="btn pri" data-a="send"><svg><use href="#i-share"/></svg>Надіслати посилання</button>'+
+    '<button class="btn" data-a="copy"><svg><use href="#i-link"/></svg>Копіювати посилання</button>'+
+    '<button class="btn" data-a="json"><svg><use href="#i-file"/></svg>Зберегти конфіг</button></div>';
+  document.body.appendChild(ov);
+  ov.onclick=function(e){
+    var b=e.target.closest('[data-a]'); if(!b){ if(e.target===ov) ov.remove(); return; }
+    var a=b.dataset.a; ov.remove();
+    if(a==='copy') copy(link());
+    else if(a==='json') dl(cfgBlob(),fname()+'.json');
+    else if(a==='send'){
+      var d={title:'Картка пошкодження '+(S.sn||''),
+             text:'БпЛА '+(MODELS[S.model]||'')+' '+(S.sn||'')+', '+(S.unit||''),url:link()};
+      if(navigator.share) navigator.share(d).catch(function(){});
+      else copy(link());
+    }
+  };
+}
+
+/* ── завантаження картки: сервер + localStorage ──────────────── */
+/* Викликається при скануванні / відкритті S/N. Доки не вирішено,
+   що робити з розбіжностями, dirty=false і на сервер нічого не йде. */
+function loadCard(sn,done){
+  dirty=false;
+  var loc=null;
+  try{ var q=localStorage.getItem('dc:'+sn); if(q) loc=snapOf(q); }catch(e){}
+  if(loc) loc.sn=sn;
+
+  if(!online()){
+    if(loc){ useSnap(loc); toast('Відновлено картку '+sn); }
+    dirty=true; done(); return;
+  }
+
+  fetch('/api/cards?sn='+encodeURIComponent(sn)).then(function(r){
+    if(r.status===404) return null;
+    if(!r.ok) throw 0;
+    return r.json();
+  }).then(function(c){
+    var srv=c?snapOfCard(c):null;
+    if(srv) srv.sn=sn;
+
+    if(!srv&&!loc){ dirty=true; done(); return; }           // нова картка
+    if(srv&&!loc){ useSnap(srv); toast('Завантажено з сервера'); dirty=true; done(); return; }
+    if(loc&&!srv){ useSnap(loc); toast('Відновлено з цього пристрою'); dirty=true; done(); return; }
+
+    var d=diff(loc,srv);
+    if(d.same){ useSnap(srv); dirty=true; done(); return; }  // однакові
+    if(!d.conflicts.length){                                 // лише доповнення
+      useSnap(d.merged);
+      toast('Об’єднано без розбіжностей');
+      dirty=true; sync(); done(); return;
+    }
+    conflictDlg(d,loc,srv,done);                             // потрібне рішення
+  }).catch(function(){
+    if(loc){ useSnap(loc); toast('Сервер недоступний — локальна копія'); }
+    dirty=true; done();
+  });
+}
+
+/* ── діалог вибору при розбіжностях ──────────────────────────── */
+function conflictDlg(d,loc,srv,done){
+  var rows=d.conflicts.map(function(c){
+    return '<tr><td class="ck">'+esc(c.label)+'</td>'+
+      '<td class="cv"><span class="src">Пристрій</span>'+esc(c.a)+'</td>'+
+      '<td class="cv"><span class="src">Сервер</span>'+esc(c.b)+'</td></tr>';
+  }).join('');
+  var extra=(d.onlyA.length||d.onlyB.length)
+    ? '<p class="cnote">Позначки пошкоджень (+'+(d.onlyA.length+d.onlyB.length)+
+      ') буде об’єднано в будь-якому разі.</p>' : '';
+
+  var ov=document.createElement('div'); ov.className='ov noprint';
+  ov.innerHTML='<div class="dlg cdlg"><h3><svg style="width:17px;height:17px">'+
+    '<use href="#i-alert"/></svg>Розбіжність даних</h3>'+
+    '<p class="cnote">Картка <b class="mono">'+esc(loc.sn)+'</b> відрізняється на цьому '+
+    'пристрої та на сервері. Оберіть, що зберегти.</p>'+
+    '<div class="ctbl"><table><thead><tr><th></th><th>Цей пристрій</th><th>Сервер</th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table></div>'+extra+
+    '<button class="btn pri" data-a="loc">Взяти дані з цього пристрою</button>'+
+    '<button class="btn" data-a="srv">Взяти дані з сервера</button></div>';
+  document.body.appendChild(ov);
+
+  ov.onclick=function(e){
+    var a=e.target.closest('[data-a]'); if(!a) return;
+    var pick=a.getAttribute('data-a'),
+        base=pick==='loc'?loc:srv,
+        other=pick==='loc'?srv:loc,
+        m=diff(base,other).merged;   /* base виграє конфлікти, решта — доповнюється */
+    useSnap(m);
+    document.body.removeChild(ov);
+    dirty=true; sync();
+    toast(pick==='loc'?'Збережено дані пристрою':'Взято дані з сервера');
+    done();
+  };
+}
+function esc(v){
+  return String(v==null?'':v).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+  });
+}
+
+/* ── сканер ──────────────────────────────────────────────────── */
+var stream=null,det=null,raf=0;
+function hasDet(){ return 'BarcodeDetector' in window; }
+function mkDet(){ return new window.BarcodeDetector({formats:['qr_code','code_128','code_39','data_matrix']}); }
+function parseCode(v){
+  v=String(v||'').trim(); var sn=v,mdl='';
+  if(/^https?:\/\//i.test(v)){
+    try{ var u=new URL(v),q=new URLSearchParams(u.hash.replace(/^#/,'')||u.search);
+      sn=q.get('sn')||q.get('s')||u.hash.replace(/^#/,'')||u.pathname.split('/').pop();
+      if(q.get('model')) mdl=q.get('model');
+    }catch(e){}
+  }
+  var mm=String(sn).match(/(?:s\/?n)\s*[:=]?\s*([A-Za-z0-9\-]{6,})/i);
+  if(mm) sn=mm[1];
+  return {sn:String(sn).replace(/[^A-Za-z0-9\-]/g,'').toUpperCase(),model:mdl};
+}
+function accept(v){
+  var t=String(v||'').trim();
+  if(t.charAt(0)==='{'){
+    try{ var o=JSON.parse(t);
+      TEXTF.concat(['model']).forEach(function(k){ if(o[k]!=null) S[k]=o[k]; });
+      S.chk={}; (o.c||[]).forEach(function(k){ S.chk[k]=true; });
+      stopCam(); S.date=S.date||today(); loadTech();
+      dirty=true; save(); render(); return true;
+    }catch(e){}
+  }
+  var r=parseCode(v); if(!r.sn) return false;
+  stopCam();
+  S.sn=r.sn;
+  loadCard(r.sn,function(){
+    S.sn=r.sn;
+    S.model=S.model||r.model||SN2MODEL[r.sn]||'';
+    S.date=S.date||today();
+    loadTech(); save(); render();
+  });
+  return true;
+}
+async function startCam(){
+  try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}); }
+  catch(e){ $('#camoff').textContent='Немає доступу до камери. Потрібен https або localhost.'; return; }
+  var v=$('#vid'); v.srcObject=stream; $('#camoff').hidden=true; $('#frame').hidden=false;
+  await v.play();
+  if(!hasDet()){ $('#camoff').hidden=false;
+    $('#camoff').textContent='Розпізнавання QR недоступне в цьому браузері. Введіть S/N вручну.'; return; }
+  det=det||mkDet();
+  var tick=async function(){
+    if(!stream) return;
+    try{ var r=await det.detect(v); if(r&&r.length&&accept(r[0].rawValue)) return; }catch(e){}
+    raf=requestAnimationFrame(tick);
+  };
+  raf=requestAnimationFrame(tick);
+}
+function stopCam(){
+  cancelAnimationFrame(raf);
+  if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
+  var f=$('#frame'),o=$('#camoff'); if(f) f.hidden=true; if(o) o.hidden=false;
+}
+async function fromFile(f){
+  if(!hasDet()){ toast('Розпізнавання недоступне'); return; }
+  try{ var b=await createImageBitmap(f),r=await (det=det||mkDet()).detect(b);
+    if(!(r&&r.length&&accept(r[0].rawValue))) toast('QR не знайдено');
+  }catch(e){ toast('QR не знайдено'); }
+}
+function fromJson(f){
+  var rd=new FileReader();
+  rd.onload=function(){
+    try{ var o=JSON.parse(rd.result);
+      TEXTF.concat(['model']).forEach(function(k){ if(o[k]!=null) S[k]=o[k]; });
+      S.chk=o.chk||{}; S.date=S.date||today(); loadTech();
+      dirty=true; save(); render();
+    }catch(e){ toast('Файл не читається'); }
+  };
+  rd.readAsText(f);
+}
+function showScan(){
+  stopCam(); $('#card').hidden=true; $('#scanBlk').hidden=false;
+  setTimeout(function(){ var e=$('#sn0'); if(e) e.focus(); },30);
+}
+
+$('#bStart').onclick=startCam;
+$('#bFile').onclick=function(){ $('#file').click(); };
+$('#file').onchange=function(){ if(this.files[0]) fromFile(this.files[0]); this.value=''; };
+$('#bOpen').onclick=function(){ $('#json').click(); };
+$('#json').onchange=function(){ if(this.files[0]) fromJson(this.files[0]); this.value=''; };
+$('#bGo').onclick=function(){ var v=$('#sn0').value.trim(); if(v) accept(v); };
+$('#sn0').onkeydown=function(e){ if(e.key==='Enter'){ e.preventDefault(); $('#bGo').click(); } };
+$('#bScan').onclick=showScan;
+$('#bPrint').onclick=printNow;
+$('#bShare').onclick=shareDlg;
+
+document.body.setAttribute('ontouchstart','');
+
+(function init(){
+  var q=location.hash.replace(/^#/,'')||location.search.replace(/^\?/,'');
+  if(q&&!/=/.test(q)) q='sn='+q;
+  if(q){ unpack(q);
+    if(S.sn){
+      var sn=S.sn,hasData=/[&=]/.test(q)&&q.replace(/^sn=[^&]*&?/,'');
+      if(hasData){                      /* повне посилання — це імпорт */
+        S.model=S.model||SN2MODEL[sn]||''; S.date=S.date||today(); loadTech();
+        dirty=true; save(); render(); return;
+      }
+      loadCard(sn,function(){           /* лише S/N — звіряємо з сервером */
+        S.sn=sn; S.model=S.model||SN2MODEL[sn]||''; S.date=S.date||today();
+        loadTech(); save(); render();
+      });
+      return; } }
+  showScan();
+})();
+</script>
+</body>
+</html>

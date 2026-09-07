@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Реєстр карток пошкоджень</title>
+<style>
+:root{
+  --floor:#0E1210; --floor2:#121714;
+  --crate:#181E1A; --crate2:#1F2621;
+  --seam:#2B342D; --seam2:#3A453C;
+  --stencil:#E9ECE4; --stencil2:#B8BFB2; --faded:#828A7E;
+  --khaki:#B7C77E; --khaki-ink:#151A10;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--floor);color:var(--stencil);
+  font:15px/1.45 -apple-system,'Segoe UI',system-ui,sans-serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(var(--seam) 1px,transparent 1px),
+    linear-gradient(90deg,var(--seam) 1px,transparent 1px);
+  background-size:44px 44px;opacity:.14}
+svg{flex:none;stroke:currentColor;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+a{color:inherit;text-decoration:none}
+
+header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--seam)}
+.hbar{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;
+  align-items:center;gap:8px;min-height:56px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;
+  letter-spacing:.6px;font-size:15px;white-space:nowrap}
+.logo svg{width:20px;height:20px;color:var(--khaki)}
+.spacer{flex:1}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:0 14px;height:38px;
+  font-size:13.5px;font-weight:600;border-radius:10px;cursor:pointer;
+  border:1px solid var(--seam2);background:var(--crate2);color:inherit}
+.btn:hover{border-color:var(--faded)}
+.btn.pri{background:var(--khaki);border-color:var(--khaki);color:var(--khaki-ink)}
+.btn svg{width:17px;height:17px}
+
+.wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:14px 12px 60px;
+  display:grid;gap:12px}
+#q{width:100%;padding:10px 12px;height:40px;font-size:14px;
+  background:var(--floor2);color:var(--stencil);border:1px solid var(--seam);
+  border-radius:11px;outline:none;font-family:inherit}
+#q:focus{border-color:var(--khaki);background:var(--crate2)}
+#q::placeholder{color:#5E655B}
+.count{font-size:11px;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--faded);font-weight:700}
+
+.rows{display:grid;gap:8px}
+.row{background:var(--crate);border:1px solid var(--seam);border-radius:14px;
+  padding:11px 13px;display:grid;gap:8px;
+  grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) auto;
+  align-items:center}
+.row:hover{border-color:var(--seam2);background:var(--crate2)}
+.sn{font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.2px;
+  overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:11.5px;color:var(--faded);margin-top:2px}
+.cell{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}
+.cell .k{font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;
+  color:var(--faded);font-weight:700;display:block}
+.tag{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;
+  font-weight:700;letter-spacing:.4px;border:1px solid var(--seam2);color:var(--stencil2)}
+.tag.fix{background:rgba(183,199,126,.15);border-color:var(--khaki);color:var(--khaki)}
+.tag.out{background:rgba(214,110,96,.15);border-color:#D66E60;color:#D66E60}
+.dmg{font-family:var(--mono);font-size:13px;color:var(--stencil2)}
+.empty{padding:48px 16px;text-align:center;color:var(--faded);font-size:14px}
+@media(max-width:720px){
+  .row{grid-template-columns:1fr auto}
+  .cell.hide{display:none}
+}
+</style>
+</head>
+<body>
+<header><div class="hbar">
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="3"/></svg>
+    <b>РЕЄСТР ПОШКОДЖЕНЬ</b>
+  </div>
+  <div class="spacer"></div>
+  <a class="btn pri" href="/">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/></svg>
+    Сканувати
+  </a>
+</div></header>
+
+<div class="wrap">
+  <input id="q" placeholder="Пошук за S/N, бортовим, підрозділом, власником…" autocomplete="off">
+  <div class="count" id="count">Завантаження…</div>
+  <div class="rows" id="rows"></div>
+</div>
+
+<script>
+var MODELS={m3t:'DJI Mavic 3T',m3p:'DJI Mavic 3 Pro',m30t:'DJI Matrice 30T',evo:'Autel EVO MAX 4T'};
+var STLBL={fix:'ВІДНОВЛЕНО',out:'НЕ ПІДЛЯГАЄ'};
+var all=[];
+
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+  });
+}
+function fmt(iso){
+  if(!iso) return '—';
+  var d=new Date(iso);
+  return isNaN(d)?'—':d.toLocaleDateString('uk-UA')+' '+
+    d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
+}
+function row(c){
+  var f=c.fields||{},n=(c.checks||[]).length,
+      st=f.status?'<span class="tag '+esc(f.status)+'">'+esc(STLBL[f.status]||f.status)+'</span>':'',
+      who=[f.holder,f.callsign?'«'+f.callsign+'»':''].filter(Boolean).join(' ');
+  return '<a class="row" href="/#sn='+encodeURIComponent(c.sn)+'">'+
+    '<div><div class="sn">'+esc(c.sn)+'</div>'+
+      '<div class="sub">'+esc(MODELS[c.model]||c.model||'—')+
+      (f.bort?' · борт '+esc(f.bort):'')+'</div></div>'+
+    '<div class="cell hide"><span class="k">Підрозділ</span>'+esc(f.unit||'—')+'</div>'+
+    '<div class="cell hide"><span class="k">Власник</span>'+esc(who||'—')+'</div>'+
+    '<div style="text-align:right">'+st+
+      '<div class="sub dmg">'+n+' поз. · '+esc(fmt(c.updatedAt))+'</div></div>'+
+  '</a>';
+}
+function draw(){
+  var q=document.getElementById('q').value.trim().toLowerCase(),
+      hit=!q?all:all.filter(function(c){
+        return JSON.stringify([c.sn,c.model,c.fields]).toLowerCase().indexOf(q)>=0;
+      });
+  document.getElementById('count').textContent=hit.length+' з '+all.length+' карток';
+  document.getElementById('rows').innerHTML=hit.length?hit.map(row).join(''):
+    '<div class="empty">Нічого не знайдено</div>';
+}
+document.getElementById('q').oninput=draw;
+
+fetch('/api/cards').then(function(r){ return r.json(); }).then(function(d){
+  all=d||[]; draw();
+}).catch(function(){
+  document.getElementById('count').textContent='Помилка з’єднання';
+});
+</script>
+</body>
+</html>
