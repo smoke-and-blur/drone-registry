@@ -1713,10 +1713,16 @@ function bind(){
         x.classList.toggle('on',x===t); x.setAttribute('aria-checked',x===t); });
     }
   }
-  c.addEventListener('click',act);
-  c.addEventListener('keydown',function(e){
-    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns],[data-cf]');
-    if(t&&(e.key===' '||e.key==='Enter')){ e.preventDefault(); act({target:e.target}); } });
+  /* Делеговані обробники вішаємо ОДИН раз на весь час життя сторінки:
+     #card не перестворюється, тож повторний addEventListener лише
+     дублював би реакцію на клік. */
+  if(!c.dataset.bound){
+    c.dataset.bound='1';
+    c.addEventListener('click',act);
+    c.addEventListener('keydown',function(e){
+      var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns],[data-cf]');
+      if(t&&(e.key===' '||e.key==='Enter')){ e.preventDefault(); act({target:e.target}); } });
+  }
   var pb=$('#bPhoto');
   if(pb) pb.onclick=function(){ $('#photoIn').click(); };
   var pc=$('#bPhotoCam');
