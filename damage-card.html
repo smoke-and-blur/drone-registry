@@ -35,6 +35,8 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
 .hbar{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;
   align-items:center;gap:8px;min-height:56px;min-width:0}
 .logo{display:flex;align-items:center;gap:8px;font-weight:800;min-width:0;
+  background:none;border:0;padding:0;cursor:pointer;font-family:inherit;
+  color:inherit;text-align:left;
   letter-spacing:.6px;font-size:15px;white-space:nowrap;overflow:hidden}
 .logo b{font-weight:800;overflow:hidden;text-overflow:ellipsis}
 .logo svg{width:20px;height:20px;color:var(--khaki)}
@@ -473,7 +475,8 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 
 <header>
   <div class="hbar">
-    <div class="logo"><svg><use href="#i-drone"/></svg><b>Картка пошкодження</b></div>
+    <button class="logo" id="bHome" type="button" title="До сканування">
+      <svg><use href="#i-drone"/></svg><b>Картка пошкодження</b></button>
     <div class="spacer"></div>
     <button class="iconbtn" id="bScan" title="Сканувати QR"><svg><use href="#i-qr"/></svg></button>
     <a class="iconbtn noprint" href="/list" title="Реєстр карток"><svg><use href="#i-list"/></svg></a>
@@ -2604,6 +2607,7 @@ window.addEventListener('beforeunload',function(e){
       }
     });
   });
+$('#bHome').onclick=function(){ $('#bScan').click(); };
 $('#bScan').onclick=function(){
   if(unsaved&&S.sn){
     if(confirm('Є незбережені зміни. Зберегти перед скануванням іншої картки?')){

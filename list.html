@@ -28,7 +28,7 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
   backdrop-filter:blur(8px);border-bottom:1px solid var(--seam)}
 .hbar{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;
   align-items:center;gap:8px;min-height:56px}
-.logo{display:flex;align-items:center;gap:8px;font-weight:800;
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;color:inherit;
   letter-spacing:.6px;font-size:15px;white-space:nowrap}
 .logo svg{width:20px;height:20px;color:var(--khaki)}
 .spacer{flex:1}
@@ -126,10 +126,10 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
 </head>
 <body>
 <header><div class="hbar">
-  <div class="logo">
+  <a class="logo" href="/" title="До сканування">
     <svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="3"/></svg>
     <b>РЕЄСТР ПОШКОДЖЕНЬ</b>
-  </div>
+  </a>
   <div class="spacer"></div>
   <a class="btn" href="/logout" title="Вийти" style="padding:0 12px">
     <svg viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M15 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v2M10 12h10m0 0-3-3m3 3-3 3"/></svg>
