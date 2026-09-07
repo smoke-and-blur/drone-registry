@@ -29,8 +29,10 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
 .hbar{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;
   align-items:center;gap:8px;min-height:56px}
 .logo{display:flex;align-items:center;gap:8px;font-weight:800;color:inherit;
-  letter-spacing:.6px;font-size:15px;white-space:nowrap}
-.logo svg{width:20px;height:20px;color:var(--khaki)}
+  letter-spacing:.6px;font-size:15px;white-space:nowrap;min-width:0;overflow:hidden}
+.logo b{overflow:hidden;text-overflow:ellipsis}
+.logo svg{width:20px;height:20px;color:var(--khaki);flex:none}
+.btn{flex:none}
 .spacer{flex:1}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:0 14px;height:38px;
   font-size:13.5px;font-weight:600;border-radius:10px;cursor:pointer;
@@ -103,6 +105,15 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
 .btn.danger:disabled{background:var(--crate2);border-color:var(--seam2);
   color:var(--faded);cursor:not-allowed}
 .mono{font-family:var(--mono)}
+@media(max-width:560px){
+  .hbar{padding:8px 10px;gap:6px}
+  /* Повна назва не влазить, але місця вистачає на коротку. */
+  .logo b{font-size:0}
+  .logo b::after{content:'РЕЄСТР';font-size:14px;letter-spacing:.5px}
+  .btxt{display:none}            /* кнопка стає іконкою */
+  .btn{padding:0 11px}
+  .wrap{padding:12px 10px 60px}
+}
 @media(max-width:860px){
   .row{grid-template-columns:46px minmax(0,1fr);
        grid-template-areas:'th id' 'th who' 'th meta';
@@ -134,9 +145,9 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
   <a class="btn" href="/logout" title="Вийти" style="padding:0 12px">
     <svg viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M15 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v2M10 12h10m0 0-3-3m3 3-3 3"/></svg>
   </a>
-  <a class="btn pri" href="/">
+  <a class="btn pri" href="/" title="Сканувати">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/></svg>
-    Сканувати
+    <span class="btxt">Сканувати</span>
   </a>
 </div></header>
 

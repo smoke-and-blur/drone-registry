@@ -312,6 +312,13 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .ctbl .cv{width:38%}
 .ctbl .src{display:none}
 @media(max-width:560px){
+  /* Шапка: логотип із довгою назвою виштовхував п'ять кнопок за екран. */
+  .hbar{padding:8px 10px;gap:4px;min-height:52px}
+  .logo{font-size:0;gap:6px}
+  .logo b{font-size:0}
+  .logo b::after{content:'КАРТКА';font-size:13.5px;letter-spacing:.4px}
+  .iconbtn{width:36px;height:36px;border-radius:9px}
+  .iconbtn svg{width:17px;height:17px}
   .ctbl thead{display:none}
   .ctbl td,.ctbl tr{display:block;width:auto}
   .ctbl .ck{padding-bottom:2px;font-weight:700;color:var(--stencil2)}
@@ -2311,23 +2318,49 @@ async function listCams(){
 }
 
 /* Малює кнопки вибору камери, якщо їх більше однієї. */
+/* Коротка зрозуміла назва камери.
+   Android: "camera2 0, facing back" -> "Основна"
+   iPhone:  "Back Dual Wide Camera"  -> "Ширококутна" */
+function camLabel(c,i){
+  var l=(c.label||'').toLowerCase();
+  if(/ultra|wide-angle|надширок/.test(l)&&/ultra/.test(l)) return 'Ультраширока';
+  if(/tele|zoom/.test(l)) return 'Телефото';
+  if(/wide/.test(l)) return 'Ширококутна';
+  if(/back|rear|environment|facing back/.test(l)) return 'Основна';
+  if(!c.label) return 'Камера '+(i+1);
+  /* невідома мітка — стискаємо до розумного */
+  var t=c.label.replace(/\s*\(.*?\)\s*/g,'').trim();
+  return t.length>14?t.slice(0,13)+'…':t;
+}
+
 function renderCamPick(){
   var box=$('#campick'); if(!box) return;
   if(camList.length<2){ box.hidden=true; box.innerHTML=''; return; }
   box.hidden=false;
-  box.innerHTML=camList.map(function(c,i){
-    var lbl=c.label||('Камера '+(i+1));
-    /* короткі назви: Safari віддає довгі рядки */
-    lbl=lbl.replace(/\s*\(.*?\)\s*/g,'').trim()||('Камера '+(i+1));
-    if(lbl.length>18) lbl=lbl.slice(0,17)+'…';
-    return '<button type="button" class="opt'+(i===camIdx?' on':'')+'" data-cam="'+i+'">'+
-           esc(lbl)+'</button>';
+
+  /* Однакові назви розрізняємо номером. */
+  var seen={};
+  var names=camList.map(function(c,i){ return camLabel(c,i); });
+  names.forEach(function(n){ seen[n]=(seen[n]||0)+1; });
+  var used={};
+  names=names.map(function(n){
+    if(seen[n]<2) return n;
+    used[n]=(used[n]||0)+1;
+    return n+' '+used[n];
+  });
+
+  box.innerHTML=names.map(function(n,i){
+    return '<button type="button" class="opt'+(i===camIdx?' on':'')+'" '+
+      'data-cam="'+i+'" aria-pressed="'+(i===camIdx)+'">'+esc(n)+'</button>';
   }).join('');
+
   [].forEach.call(box.querySelectorAll('[data-cam]'),function(b){
     b.onclick=function(){
       var i=+b.getAttribute('data-cam');
       if(i===camIdx) return;
-      camIdx=i; try{ localStorage.setItem('dc:cam',camList[i].deviceId); }catch(e){}
+      camIdx=i;
+      try{ localStorage.setItem('dc:cam',camList[i].deviceId); }catch(e){}
+      renderCamPick();      /* підсвітити обрану ОДРАЗУ, до перезапуску */
       restartCam();
     };
   });
