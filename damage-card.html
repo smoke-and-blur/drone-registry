@@ -189,18 +189,25 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .sheet>*:nth-child(n+2){display:none}
 .stick{background:var(--floor2);border:1px solid var(--seam2);border-radius:8px;
   padding:10px;display:grid;gap:8px;align-content:start;align-self:start}
-/* Позначки на стікері: різні форми в різних кутах, щоб не плутались. */
+/* Позначки на стікері. Кожна має власне місце, бо можуть стояти
+   всі три водночас. Форми різні — стікер друкується чорно-білим. */
 .stick{position:relative}
 .s-mk{position:absolute;display:block;pointer-events:none}
-/* трикутник — верхній правий кут */
+/* ▲ трикутник — є підстава */
 .mk-tri{top:7px;right:7px;width:0;height:0;
   border-left:9px solid transparent;border-right:9px solid transparent;
   border-bottom:16px solid var(--stencil)}
-/* коло і квадрат — праворуч на рівні рядка з датою: під сіткою
-   вузлів місця немає, а тут вільно й добре видно */
-.mk-cir{top:52px;right:7px;width:17px;height:17px;border-radius:50%;
+/* ■ квадрат — незалежна діагностика */
+.mk-sq{top:30px;right:7px;width:16px;height:16px;background:var(--stencil)}
+/* ● коло — підлягає ремонту */
+.mk-cir{top:52px;right:8px;width:16px;height:16px;border-radius:50%;
   background:var(--stencil)}
-.mk-sq{top:52px;right:7px;width:16px;height:16px;background:var(--stencil)}
+/* ✕ хрест — не підлягає ремонту */
+.mk-x{top:74px;right:7px;width:17px;height:17px}
+.mk-x::before,.mk-x::after{content:'';position:absolute;top:7px;left:0;
+  width:17px;height:3px;background:var(--stencil)}
+.mk-x::before{transform:rotate(45deg)}
+.mk-x::after{transform:rotate(-45deg)}
 .mklegend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--faded);
   padding-top:2px}
 .mklegend span{display:flex;align-items:center;gap:5px}
@@ -209,6 +216,15 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   border-right:6px solid transparent;border-bottom:10px solid var(--stencil2)}
 .lg-cir{width:11px;height:11px;border-radius:50%;background:var(--stencil2)}
 .lg-sq{width:10px;height:10px;background:var(--stencil2)}
+/* Значок форми поруч із підписом поля — щоб було видно, що саме
+   зʼявиться на стікері. */
+.inl{display:inline-block;vertical-align:middle;margin-left:5px;opacity:.85}
+.opt .inl{margin-left:6px}
+.lg-x{position:relative;width:11px;height:11px}
+.lg-x::before,.lg-x::after{content:'';position:absolute;top:4px;left:0;
+  width:11px;height:2px;background:var(--stencil2)}
+.lg-x::before{transform:rotate(45deg)}
+.lg-x::after{transform:rotate(-45deg)}
 .s-hd{display:grid;gap:3px}
 .s-unit{display:flex;align-items:baseline;gap:8px;font-size:21px;font-weight:800;
   line-height:1.1;overflow:hidden}
@@ -454,13 +470,17 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
     border-bottom:.5pt dashed #000;border-radius:0;
     width:70mm;height:50mm;padding:2.6mm 8mm 2.6mm 2.6mm;gap:1.2mm;
     break-inside:avoid;margin:0;align-content:start;overflow:hidden}
-  /* Позначки: суцільний чорний, помітні з відстані. */
+  /* Позначки: суцільний чорний, помітні з відстані. Розташовані
+     вертикально по правому краю, кожна на своєму рівні. */
   body.pr-stick .mk-tri{top:2mm;right:2mm;
     border-left:2.6mm solid transparent;border-right:2.6mm solid transparent;
     border-bottom:4.6mm solid #000}
-  body.pr-stick .mk-cir{top:24.2mm;right:2mm;width:5mm;height:5mm;background:#000;
+  body.pr-stick .mk-sq{top:8.5mm;right:2mm;width:4.6mm;height:4.6mm;background:#000}
+  body.pr-stick .mk-cir{top:15mm;right:2mm;width:4.8mm;height:4.8mm;background:#000;
     border-radius:50%}
-  body.pr-stick .mk-sq{top:24.4mm;right:2mm;width:4.6mm;height:4.6mm;background:#000}
+  body.pr-stick .mk-x{top:21.5mm;right:2mm;width:5mm;height:5mm}
+  body.pr-stick .mk-x::before,body.pr-stick .mk-x::after{
+    top:2mm;left:0;width:5mm;height:1mm;background:#000}
   body.pr-stick .s-hd{gap:.8mm}
   body.pr-stick .s-unit{font-size:15pt;line-height:1.05;color:#000}
   body.pr-stick .s-unit .st{font-size:8pt;color:#000}
@@ -1404,16 +1424,22 @@ var ARMCOLS=[
  ['wire','Силова проводка',only('m30t','m4t','m4e','evo')],['mount','Кріплення двигуна',ALL],
  ['rtk','Антена RTK',only('m30t','m4t','m4e')]];
 var ABBR={1:'ПП',2:'ПЛ',3:'ЗЛ',4:'ЗП'};
-var VERDICT=['Діагностика','Ремонт','Заміна вузлів','Списання'];
-/* Підтвердження поломки. Порожнє = не підтверджено. */
-var CONFIRM=[['own','Підтверджено'],['ind','Незалежна діагностика']];
-var CONFLBL={own:'ПІДТВЕРДЖЕНО',ind:'НЕЗАЛЕЖНА ДІАГНОСТИКА'};
+/* Висновок. Можна відмітити кілька: «незалежна діагностика» — це факт
+   перевірки, а «підлягає / не підлягає» — рішення.
+   Ключі vd.N уже збережені в базі, тому індекси стабільні. */
+/* Форма позначки для кожного пункту висновку (див. легенду стікера). */
+var MKSHAPE=['sq','cir','x'];
+var VERDICT=[
+  {k:'ind',t:'Незалежна діагностика',s:'НЕЗАЛЕЖНА ДІАГНОСТИКА'},
+  {k:'fix',t:'Підлягає ремонту',s:'ПІДЛЯГАЄ РЕМОНТУ'},
+  {k:'out',t:'Не підлягає ремонту',s:'НЕ ПІДЛЯГАЄ РЕМОНТУ'}
+];
 var STATUS=[['fix','Відновлено'],['out','Не підлягає ремонту']];
 var TEXTF=['sn','bort','hours','date','unit','holder','callsign','post','holderPhone',
-           'basis','cost','confirm','note','status','done','doneBy','techPhone','act'];
+           'basis','cost','note','status','done','doneBy','techPhone','act'];
 
 var S={sn:'',model:'',bort:'',hours:'',date:'',unit:'',holder:'',callsign:'',post:'',
-       holderPhone:'',basis:'',cost:'',confirm:'',note:'',
+       holderPhone:'',basis:'',cost:'',note:'',
        status:'',done:'',doneBy:'',techPhone:'',act:'',pm:'fil',kCard:1,kStick:1,nStick:1,chk:{},ph:[]};
 
 function $(s){ return document.querySelector(s); }
@@ -1449,7 +1475,8 @@ function render(){
      fld('Посада','<input id="f-post" value="'+esc(S.post)+'">')+
      fld('Підрозділ','<input id="f-unit" value="'+esc(S.unit)+'">')+
      fld('Телефон','<input id="f-holderPhone" inputmode="tel" value="'+esc(S.holderPhone)+'">')+
-     fld('Підстава','<input id="f-basis" value="'+esc(S.basis)+'">')+
+     fld('Підстава <i class="lg-tri inl"></i>',
+       '<input id="f-basis" value="'+esc(S.basis)+'">')+
      fld('Вартість виробу, грн',
        '<input id="f-cost" inputmode="decimal" placeholder="0.00" value="'+esc(S.cost)+'">')+
     '</div>');
@@ -1471,14 +1498,11 @@ function render(){
   });
 
   h+=blk('i-alert','Висновок',cnt('vd'),
-    '<div class="field"><span class="lbl">Підтвердження поломки</span>'+
-      '<div class="opts c2">'+CONFIRM.map(function(c){
-        var on=S.confirm===c[0];
-        return '<div class="opt'+(on?' on':'')+'" data-cf="'+c[0]+'" role="radio" '+
-          'tabindex="0" aria-checked="'+on+'">'+
-          '<span class="box"><svg><use href="#i-check"/></svg></span><span>'+c[1]+'</span></div>';
-      }).join('')+'</div></div>'+
-    '<div class="opts">'+VERDICT.map(function(v,i){ return chk('vd.'+i,v); }).join('')+
+    '<p class="bhint">Можна відмітити кілька: діагностика — це факт перевірки, '+
+      'ремонт — рішення щодо виробу. Позначене відображається на стікері.</p>'+
+    '<div class="opts">'+VERDICT.map(function(v,i){
+      return chk('vd.'+i,v.t+' <i class="lg-'+MKSHAPE[i]+' inl"></i>');
+    }).join('')+
       '<div class="field ta full"><span class="lbl">Опис пошкоджень</span>'+
       '<textarea id="f-note">'+esc(S.note)+'</textarea></div>'+
     '</div>');
@@ -1511,8 +1535,9 @@ function render(){
      '</div><div class="sheet">'+sheet()+'</div>'+
      '<div class="mklegend noprint">'+
        '<span><i class="lg-tri"></i>є підстава</span>'+
-       '<span><i class="lg-cir"></i>підтверджено</span>'+
        '<span><i class="lg-sq"></i>незалежна діагностика</span>'+
+       '<span><i class="lg-cir"></i>підлягає ремонту</span>'+
+       '<span><i class="lg-x"></i>не підлягає ремонту</span>'+
      '</div></div>';
 
   h+=photoBlk();
@@ -1640,10 +1665,14 @@ function stick(){
   var marks='';
   if(S.basis)
     marks+='<span class="s-mk mk-tri" title="Є підстава" aria-label="Є підстава"></span>';
-  if(S.confirm==='own')
-    marks+='<span class="s-mk mk-cir" title="Підтверджено" aria-label="Підтверджено"></span>';
-  else if(S.confirm==='ind')
+  /* Позначки незалежні: діагностика — факт, ремонт — рішення,
+     тож вони можуть стояти водночас. */
+  if(S.chk['vd.0'])
     marks+='<span class="s-mk mk-sq" title="Незалежна діагностика" aria-label="Незалежна діагностика"></span>';
+  if(S.chk['vd.1'])
+    marks+='<span class="s-mk mk-cir" title="Підлягає ремонту" aria-label="Підлягає ремонту"></span>';
+  if(S.chk['vd.2'])
+    marks+='<span class="s-mk mk-x" title="Не підлягає ремонту" aria-label="Не підлягає ремонту"></span>';
 
   return '<div class="stick">'+
     marks+
@@ -1677,7 +1706,7 @@ function bind(){
   $('#f-model').onchange=function(){ S.model=this.value; save(); render(); };
   var c=$('#card');
   function act(e){
-    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns],[data-cf]');
+    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns]');
     if(!t) return;
     if(t.dataset.k!==undefined){ flip(t); return; }
     if(t.dataset.st!==undefined){
@@ -1693,13 +1722,6 @@ function bind(){
       t.setAttribute('aria-checked',!!S[t.dataset.pk]);
       if(t.dataset.pk==='kStick') render();   /* показати/сховати вибір кількості */
       return;
-    }
-    if(t.dataset.cf!==undefined){
-      S.confirm=(S.confirm===t.dataset.cf)?'':t.dataset.cf;
-      [].forEach.call(t.parentNode.children,function(x){
-        var on=x.dataset.cf===S.confirm&&!!S.confirm;
-        x.classList.toggle('on',on); x.setAttribute('aria-checked',on); });
-      save(); refreshStick(); return;
     }
     if(t.dataset.ns!==undefined){
       S.nStick=+t.dataset.ns;
@@ -1720,7 +1742,7 @@ function bind(){
     c.dataset.bound='1';
     c.addEventListener('click',act);
     c.addEventListener('keydown',function(e){
-      var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns],[data-cf]');
+      var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns]');
       if(t&&(e.key===' '||e.key==='Enter')){ e.preventDefault(); act({target:e.target}); } });
   }
   var pb=$('#bPhoto');
@@ -2062,8 +2084,7 @@ function refreshSaveBtn(){
    Якщо одна сторона порожня — беремо непорожню (це доповнення, не конфлікт). */
 var FLBL={sn:'S/N',bort:'Бортовий номер',hours:'Наліт',date:'Дата',unit:'Підрозділ',
  holder:'Власник',callsign:'Позивний',post:'Посада',holderPhone:'Телефон власника',
- basis:'Підстава',cost:'Вартість виробу',confirm:'Підтвердження поломки',
- note:'Примітка',status:'Статус',
+ basis:'Підстава',cost:'Вартість виробу',note:'Примітка',status:'Статус',
  done:'Виконані роботи',doneBy:'Виконав',techPhone:'Телефон техніка',
  act:'Акт',model:'Модель'};
 
