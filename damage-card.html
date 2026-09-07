@@ -1433,19 +1433,10 @@ var ARMCOLS=[
  ['wire','Силова проводка',only('m30t','m4t','m4e','evo')],['mount','Кріплення двигуна',ALL],
  ['rtk','Антена RTK',only('m30t','m4t','m4e')]];
 var ABBR={1:'ПП',2:'ПЛ',3:'ЗЛ',4:'ЗП'};
-/* Висновок. Можна відмітити кілька: «незалежна діагностика» — це факт
-   перевірки, а «підлягає / не підлягає» — рішення.
-   Ключі — ІМЕНА (vd.ind тощо), а не індекси: інакше зміна складу
-   списку мовчки перетлумачила б уже збережені картки. */
-/* Форма позначки для кожного пункту висновку (див. легенду стікера). */
-var MKSHAPE=['sq','cir','x'];
-var VERDICT=[
-  {k:'ind',t:'Незалежна діагностика'},
-  {k:'fix',t:'Підлягає ремонту'},
-  {k:'out',t:'Не підлягає ремонту'}
-];
-/* Статус — РЕЗУЛЬТАТ виконаних робіт (не рішення: воно у «Висновку»). */
-var STATUS=[['fix','Відновлено'],['out','Списано']];
+/* VERDICT, STATUS, STLBL, BASIS, verdictName() — у models.js:
+   один список назв на картку, стікер і реєстр.
+   Ключі висновку — ІМЕНА (vd.ind тощо), а не індекси: інакше зміна
+   складу списку мовчки перетлумачила б уже збережені картки. */
 var TEXTF=['sn','bort','hours','date','unit','holder','callsign','post','holderPhone',
            'basis','cost','note','status','done','doneBy','techPhone','act'];
 
@@ -1486,8 +1477,8 @@ function render(){
      fld('Посада','<input id="f-post" value="'+esc(S.post)+'">')+
      fld('Підрозділ','<input id="f-unit" value="'+esc(S.unit)+'">')+
      fld('Телефон','<input id="f-holderPhone" inputmode="tel" value="'+esc(S.holderPhone)+'">')+
-     fld('Підстава <i class="lg-tri inl"></i>',
-       '<input id="f-basis" value="'+esc(S.basis)+'">')+
+     fld(BASIS.t+' <i class="lg-'+BASIS.mk+' inl"></i>',
+       '<input id="f-basis" placeholder="номер акта / рішення" value="'+esc(S.basis)+'">')+
      fld('Вартість виробу, грн',
        '<input id="f-cost" inputmode="decimal" placeholder="0.00" value="'+esc(S.cost)+'">')+
     '</div>');
@@ -1512,7 +1503,7 @@ function render(){
     '<p class="bhint">Можна відмітити кілька: діагностика — це факт перевірки, '+
       'ремонт — рішення щодо виробу. Позначене відображається на стікері.</p>'+
     '<div class="opts">'+VERDICT.map(function(v,i){
-      return chk('vd.'+v.k,v.t+' <i class="lg-'+MKSHAPE[i]+' inl"></i>');
+      return chk('vd.'+v.k,v.t+' <i class="lg-'+v.mk+' inl"></i>');
     }).join('')+
       '<div class="field ta full"><span class="lbl">Опис пошкоджень</span>'+
       '<textarea id="f-note">'+esc(S.note)+'</textarea></div>'+
@@ -1546,10 +1537,10 @@ function render(){
      '</div><div class="sheet">'+sheet()+'</div>'+
      '<p class="bhint noprint">Ці позначки друкуються на стікері.</p>'+
      '<div class="mklegend noprint">'+
-       '<span><i class="lg-tri"></i>є підстава</span>'+
-       '<span><i class="lg-sq"></i>незалежна діагностика</span>'+
-       '<span><i class="lg-cir"></i>підлягає ремонту</span>'+
-       '<span><i class="lg-x"></i>не підлягає ремонту</span>'+
+       '<span><i class="lg-'+BASIS.mk+'"></i>'+BASIS.short+' — '+BASIS.t.toLowerCase()+'</span>'+
+       VERDICT.map(function(v){
+         return '<span><i class="lg-'+v.mk+'"></i>'+v.short+' — '+v.t.toLowerCase()+'</span>';
+       }).join('')+
      '</div></div>';
 
   h+=photoBlk();
@@ -1607,10 +1598,6 @@ function pad(html,n){
 }
 function chk(id,t){ return '<div class="opt'+(S.chk[id]?' on':'')+'" data-k="'+id+'" role="checkbox" tabindex="0" aria-checked="'+(!!S.chk[id])+'">'+
   '<span class="box"><svg><use href="#i-check"/></svg></span><span>'+t+'</span></div>'; }
-/* Старі картки зберігали висновок за позицією (vd.0..vd.3) зі списку
-   Діагностика / Ремонт / Заміна вузлів / Списання. Розкладаємо їх у
-   нові іменовані ключі, щоб нічого не читалось хибно.
-   Викликається один раз при завантаженні картки. */
 /* Обидва рішення водночас — суперечність. Лишаємо «не підлягає»:
    це найсуворіший висновок, і мовчки послабити його було б гірше. */
 function fixVerdictConflict(chk){
@@ -1618,16 +1605,15 @@ function fixVerdictConflict(chk){
   return chk;
 }
 
+/* Обгортка над спільною migrateChecks() для об'єкта S.chk. */
 function migrateVerdict(chk){
   if(!chk) return chk;
-  var had=false;
-  ['0','1','2','3'].forEach(function(n){ if(chk['vd.'+n]) had=true; });
-  if(!had) return fixVerdictConflict(chk);
-  /* Діагностика -> нічого (не «незалежна»); Ремонт і Заміна вузлів ->
-     підлягає ремонту; Списання -> не підлягає. */
-  if(chk['vd.1']||chk['vd.2']) chk['vd.fix']=true;
-  if(chk['vd.3']) chk['vd.out']=true;
-  ['0','1','2','3'].forEach(function(n){ delete chk['vd.'+n]; });
+  var on=[]; for(var k in chk){ if(chk[k]) on.push(k); }
+  var m=migrateChecks(on);
+  if(m!==on){
+    for(var k2 in chk) delete chk[k2];
+    m.forEach(function(x){ chk[x]=true; });
+  }
   return fixVerdictConflict(chk);
 }
 
@@ -1645,10 +1631,7 @@ function nameOf(k){
     var c=ARMCOLS.filter(function(x){ return x[0]===a[2]; })[0];
     return 'М'+a[1]+' · '+(c?c[1]:a[2]);
   }
-  if(a[0]==='vd'){
-    var v=VERDICT.filter(function(x){ return x.k===a[1]; })[0];
-    return v?v.t:a[1];
-  }
+  if(a[0]==='vd') return verdictName(a[1]);
   var b=BLOCKS.filter(function(x){ return x.id===a[0]; })[0];
   if(!b) return k;
   var it=b.items.filter(function(x){ return x[0]===a[1]; })[0];
@@ -1705,10 +1688,10 @@ function stick(){
   /* Позначки з підписами. Діагностика — факт, ремонт — рішення,
      тож перша поєднується з будь-яким рішенням. */
   var mk=[];
-  if(S.basis)          mk.push(['tri','ПІДСТАВА','Є підстава']);
-  if(S.chk['vd.ind'])  mk.push(['sq','ДІАГН.','Незалежна діагностика']);
-  if(S.chk['vd.fix'])  mk.push(['cir','РЕМОНТ','Підлягає ремонту']);
-  if(S.chk['vd.out'])  mk.push(['x','СПИСАТИ','Не підлягає ремонту']);
+  if(S.basis) mk.push([BASIS.mk,BASIS.short,BASIS.t+': '+S.basis]);
+  VERDICT.forEach(function(v){
+    if(S.chk['vd.'+v.k]) mk.push([v.mk,v.short,v.t]);
+  });
   var marks=mk.length
     ? '<div class="s-marks">'+mk.map(function(m){
         return '<div class="s-mkrow" title="'+esc(m[2])+'">'+

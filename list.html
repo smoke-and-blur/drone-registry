@@ -80,10 +80,28 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
 .cell{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px}
 .cell .k{font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;
   color:var(--faded);font-weight:700;display:block}
-.tag{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;
-  font-weight:700;letter-spacing:.4px;border:1px solid var(--seam2);color:var(--stencil2)}
+.tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;
+  font-size:11px;font-weight:700;letter-spacing:.4px;
+  border:1px solid var(--seam2);color:var(--stencil2);white-space:nowrap}
+.meta .tag{margin:0 0 3px 4px}
 .tag.fix{background:rgba(183,199,126,.15);border-color:var(--khaki);color:var(--khaki)}
 .tag.out{background:rgba(214,110,96,.15);border-color:#D66E60;color:#D66E60}
+.tag.basis{border-color:var(--seam2);color:var(--stencil2)}
+.tag.vd-ind{border-color:var(--seam2);color:var(--stencil2)}
+.tag.vd-fix{border-color:var(--khaki);color:var(--khaki)}
+.tag.vd-out{border-color:#D66E60;color:#D66E60}
+
+/* Значки форм — такі самі, як на стікері та в легенді картки. */
+.tag i{flex:none}
+.lg-tri{width:0;height:0;border-left:5px solid transparent;
+  border-right:5px solid transparent;border-bottom:9px solid currentColor}
+.lg-sq{width:8px;height:8px;background:currentColor}
+.lg-cir{width:9px;height:9px;border-radius:50%;background:currentColor}
+.lg-x{position:relative;width:9px;height:9px}
+.lg-x::before,.lg-x::after{content:'';position:absolute;top:3px;left:0;
+  width:9px;height:2px;background:currentColor}
+.lg-x::before{transform:rotate(45deg)}
+.lg-x::after{transform:rotate(-45deg)}
 .dmg{font-family:var(--mono);font-size:13px;color:var(--stencil2)}
 .cost{font-family:var(--mono);font-size:12px;color:var(--khaki);font-weight:700;
   white-space:nowrap}
@@ -180,10 +198,27 @@ function fmt(iso){
   return isNaN(d)?'—':d.toLocaleDateString('uk-UA')+' '+
     d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
 }
+/* Плашки стану: підстава, висновок, статус робіт.
+   Назви й форми — зі спільного models.js, щоб усюди збігались. */
+function tags(c,f){
+  var out=[],chk=migrateChecks(c.checks||[]);   /* старі vd.0..3 */
+  if(f.basis)
+    out.push('<span class="tag basis" title="'+esc(BASIS.t+': '+f.basis)+'">'+
+      '<i class="lg-'+BASIS.mk+'"></i>'+esc(BASIS.short)+'</span>');
+  VERDICT.forEach(function(v){
+    if(chk.indexOf('vd.'+v.k)<0) return;
+    out.push('<span class="tag vd-'+v.k+'" title="'+esc(v.t)+'">'+
+      '<i class="lg-'+v.mk+'"></i>'+esc(v.short)+'</span>');
+  });
+  if(f.status)
+    out.push('<span class="tag '+esc(f.status)+'">'+esc(STLBL[f.status]||f.status)+'</span>');
+  return out.join('');
+}
+
 function row(c){
   var f=c.fields||{},n=(c.checks||[]).length,
       np=(c.photoCount!==undefined?c.photoCount:(c.photos||[]).length),
-      st=f.status?'<span class="tag '+esc(f.status)+'">'+esc(STLBL[f.status]||f.status)+'</span>':'',
+      st=tags(c,f),
       who=[f.holder,f.callsign?'«'+f.callsign+'»':''].filter(Boolean).join(' ');
   var ph=(c.photos||[])[0],
       thumb=ph&&ph.data
