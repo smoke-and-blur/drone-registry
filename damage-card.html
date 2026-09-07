@@ -95,6 +95,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .opts{display:grid;grid-template-columns:repeat(var(--cols),1fr);gap:var(--gap)}
 .opts.c3{grid-template-columns:repeat(3,1fr)}
 .opts.c2{grid-template-columns:repeat(2,1fr)}
+.opts.c4{grid-template-columns:repeat(4,1fr)}
 .full{grid-column:1/-1}
 .dv{display:none}
 .opt.rad .box{border-radius:99px}
@@ -177,15 +178,21 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .sheet>*:nth-child(n+2){display:none}
 .stick{background:var(--floor2);border:1px solid var(--seam2);border-radius:8px;
   padding:10px;display:grid;gap:8px;align-content:start;align-self:start}
-.s-top{display:grid;grid-template-columns:1fr minmax(0,auto);gap:8px;align-items:center;height:40px}
-.s-sn{font-family:var(--mono);font-size:38px;font-weight:800;line-height:1;letter-spacing:1.5px}
-.s-md .st{font-weight:800;letter-spacing:.5px;color:var(--stencil2)}
-.s-md .st.ok{color:var(--khaki)}
-.s-md{font-size:13px;color:var(--faded);text-align:right;line-height:1.3;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.s-who{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:14px;min-height:19px;font-weight:600}
-.s-who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.s-who .r{text-align:right;color:var(--faded)}
+.s-hd{display:grid;gap:3px}
+.s-unit{display:flex;align-items:baseline;gap:8px;font-size:21px;font-weight:800;
+  line-height:1.1;overflow:hidden}
+.s-unit .st{margin-left:auto;font-size:12px;font-weight:800;letter-spacing:.5px;
+  color:var(--stencil2);white-space:nowrap}
+.s-unit .st.ok{color:var(--khaki)}
+.s-name{font-size:19px;font-weight:700;line-height:1.15;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.s-name .cs{color:var(--faded);font-weight:600}
+.s-mdl{font-size:16px;font-weight:700;color:var(--stencil2);line-height:1.15}
+.s-sn{font-family:var(--mono);font-size:19px;font-weight:800;line-height:1.15;
+  letter-spacing:.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.s-meta{display:grid;grid-template-columns:1fr auto;gap:8px;font-family:var(--mono);
+  font-size:12px;color:var(--faded)}
+.s-meta .r{text-align:right}
 .s-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .s-list{display:none;flex-wrap:wrap;gap:6px}
 .s-i{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--seam);
@@ -199,10 +206,25 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .s-c .box svg{width:9px;height:9px}
 .s-c.on{border-color:var(--khaki)}
 .s-c.on .box{background:var(--khaki);border-color:var(--khaki);color:var(--khaki-ink)}
-.s-ft{display:grid;grid-template-columns:1fr auto;font-family:var(--mono);
-  font-size:12px;color:var(--faded)}
+.s-ft{display:none}
 
 /* сканер */
+.torch{position:absolute;right:10px;bottom:10px;width:42px;height:42px;
+  border-radius:12px;border:1px solid var(--seam2);background:rgba(14,18,16,.78);
+  color:var(--stencil2);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;padding:0;z-index:3;backdrop-filter:blur(4px)}
+.torch svg{width:20px;height:20px}
+.torch.on{background:var(--khaki);border-color:var(--khaki);color:var(--khaki-ink)}
+.torch.on svg{fill:currentColor}
+.campick{display:flex;flex-wrap:wrap;gap:var(--gap)}
+.campick .opt{flex:1 1 auto;min-width:0;justify-content:center;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;cursor:pointer;font-size:12.5px;
+  border:1px solid var(--seam2);background:var(--crate2);color:var(--stencil2);
+  border-radius:9px;padding:7px 10px;display:flex;align-items:center;font-family:inherit}
+.campick .opt.on{border-color:var(--khaki);color:var(--khaki);background:rgba(183,199,126,.12)}
+.zoomrow{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center}
+.zoomrow input[type=range]{width:100%;accent-color:var(--khaki);height:28px;
+  background:transparent;border:0;padding:0}
 .cam{position:relative;background:var(--floor2);border:1px solid var(--seam);
   border-radius:14px;overflow:hidden;aspect-ratio:4/3;width:100%;max-width:100%}
 #scanBlk{max-width:520px;margin:0 auto;width:100%}
@@ -377,33 +399,34 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   body.pr-card.pr-stick #stickBlk{break-before:page;page-break-before:always;margin-top:0}
   body.pr-stick #stickBlk{display:block;border:0;padding:0;margin:0}
   body.pr-stick #stickBlk .blkh{display:none}
-  body.pr-stick .sheet{grid-template-columns:repeat(2,52mm)!important;gap:0;justify-content:start;
+  body.pr-stick .sheet{grid-template-columns:repeat(2,70mm)!important;gap:0;justify-content:start;
     border-top:.5pt dashed #000;border-left:.5pt dashed #000;width:max-content}
-  body.pr-stick .sheet:has(>:only-child){grid-template-columns:52mm!important}
+  body.pr-stick .sheet:has(>:only-child){grid-template-columns:70mm!important}
   body.pr-stick .sheet>*:nth-child(n+2){display:grid}
   body.pr-stick .stick{background:#fff;border:0;border-right:.5pt dashed #000;
     border-bottom:.5pt dashed #000;border-radius:0;
-    width:52mm;height:30mm;padding:1.2mm;gap:.5mm;break-inside:avoid;margin:0;
-    align-content:space-between;overflow:hidden}
-  body.pr-stick .s-top{height:auto}
-  body.pr-stick .s-sn{font-size:19pt;letter-spacing:.2px}
-  body.pr-stick .s-md{font-size:7pt;line-height:1.15}
-  body.pr-stick .s-who{font-size:8pt;min-height:0;font-weight:600}
-  body.pr-stick .s-md,body.pr-stick .s-who{color:#000}
-  body.pr-stick .s-ft{color:#555}
-  body.pr-stick .s-who .r{color:#555}
-  body.pr-stick .s-grid{gap:.5mm}
-  body.pr-stick .s-c{background:#fff;border:var(--pl);border-radius:1px;height:4mm;
-    font-size:7pt;line-height:1;align-items:center;padding:0 .6mm;gap:.6mm;
+    width:70mm;height:50mm;padding:2.6mm;gap:1.2mm;break-inside:avoid;margin:0;
+    align-content:start;overflow:hidden}
+  body.pr-stick .s-hd{gap:.8mm}
+  body.pr-stick .s-unit{font-size:15pt;line-height:1.05;color:#000}
+  body.pr-stick .s-unit .st{font-size:8pt;color:#000}
+  body.pr-stick .s-name{font-size:13pt;line-height:1.1;color:#000}
+  body.pr-stick .s-name .cs{color:#333}
+  body.pr-stick .s-mdl{font-size:11pt;line-height:1.1;color:#000}
+  body.pr-stick .s-sn{font-size:12pt;letter-spacing:.1px;line-height:1.1;color:#000}
+  body.pr-stick .s-meta{font-size:7.5pt;color:#444}
+  body.pr-stick .s-grid{gap:.8mm}
+  body.pr-stick .s-c{background:#fff;border:var(--pl);border-radius:1px;height:4.4mm;
+    font-size:8pt;line-height:1;align-items:center;padding:0 1mm;gap:.8mm;
     overflow:hidden;white-space:nowrap;font-weight:600}
-  body.pr-stick .s-c .box{border-color:#000;border-radius:0;width:7px;height:7px;min-width:7px}
-  body.pr-stick .s-ft{font-size:6.4pt;font-weight:600}
+  body.pr-stick .s-c .box{border-color:#000;border-radius:0;width:9px;height:9px;min-width:9px}
+  body.pr-stick .s-ft{display:none}
   body.pr-stick .s-c.on .box{background:#000;border:2.5px solid #000}
   body.m-filled.pr-stick .s-grid{display:none}
   body.m-filled.pr-stick .s-list{display:flex;flex-wrap:wrap;gap:1.4mm;align-content:flex-start}
-  body.pr-stick .s-i{border:var(--pl);border-radius:1px;padding:.5mm .8mm;font-size:7pt;
-    line-height:1;align-items:center;white-space:nowrap;gap:.6mm;font-weight:600}
-  body.pr-stick .s-i .box{width:7px;height:7px;min-width:7px;border-radius:0;border:.5pt solid #000}
+  body.pr-stick .s-i{border:var(--pl);border-radius:1px;padding:.7mm 1mm;font-size:8pt;
+    line-height:1;align-items:center;white-space:nowrap;gap:.8mm;font-weight:600}
+  body.pr-stick .s-i .box{width:9px;height:9px;min-width:9px;border-radius:0;border:.5pt solid #000}
   body.pr-stick .s-i.on .box{background:#000;border:2.5px solid #000}
   body.m-filled.pr-stick .s-list{gap:.7mm}
   body.pr-stick .s-md .st{color:#000}
@@ -426,6 +449,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   <symbol id="i-body" viewBox="0 0 24 24"><path d="M5 8h14l1.5 8H3.5z"/><path d="M8 8V5h8v3"/></symbol>
   <symbol id="i-arm" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 8.5 15 15"/></symbol>
   <symbol id="i-gimbal" viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M4 13a8 8 0 0 1 16 0M12 3v3"/></symbol>
+  <symbol id="i-torch" viewBox="0 0 24 24"><path d="M9 2h6l-1 6h3l-7 14 2-9H8z"/></symbol>
   <symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 5h9l2 3h5v11H4z"/><circle cx="12.5" cy="13" r="3.5"/></symbol>
   <symbol id="i-chip" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></symbol>
   <symbol id="i-case" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></symbol>
@@ -456,6 +480,15 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
         <video id="vid" playsinline muted></video>
         <div class="frame" id="frame" hidden></div>
         <div class="camoff" id="camoff">Наведіть камеру на QR або серійний номер</div>
+        <button type="button" class="torch" id="bTorch" hidden
+                aria-pressed="false" title="Ліхтарик">
+          <svg><use href="#i-torch"/></svg>
+        </button>
+      </div>
+      <div class="campick" id="campick" hidden></div>
+      <div class="zoomrow" hidden>
+        <span class="lbl">Зум</span>
+        <input type="range" id="zoom" min="1" max="4" step="0.1" value="1">
       </div>
       <div class="snrow">
         <input id="sn0" class="mono" placeholder="Серійний номер" autocomplete="off" autofocus>
@@ -680,7 +713,444 @@ var QR=(function(){
       '<rect width="'+t+'" height="'+t+'" fill="#fff" stroke="none"/>'+
       '<path d="'+d+'" fill="#000" stroke="none"/></svg>';
   }
-  return {svg:svg};
+  /* ── ДЕКОДЕР (Safari/iOS не має BarcodeDetector) ───────────────
+     ImageData -> рядок або null. Використовує таблиці Галуа вище. */
+
+  function pmul(a,b){
+    var r=new Array(a.length+b.length-1);
+    for(var z=0;z<r.length;z++) r[z]=0;
+    for(var i=0;i<a.length;i++) for(var j=0;j<b.length;j++) r[i+j]^=mul(a[i],b[j]);
+    return r;
+  }
+  function peval(p,x){ var y=0; for(var i=0;i<p.length;i++) y=mul(y,x)^p[i]; return y; }
+  function inv(a){ return EXP[(255-LOG[a])%255]; }
+
+  /* Berlekamp-Massey + Chien + Forney. null якщо не виправити. */
+  function rsFix(msg,nsym){
+    var synd=[],bad=false,i,j,k;
+    for(i=0;i<nsym;i++){ synd[i]=peval(msg,EXP[i]); if(synd[i]) bad=true; }
+    if(!bad) return msg;
+
+    var errLoc=[1],oldLoc=[1];
+    for(i=0;i<nsym;i++){
+      oldLoc=oldLoc.concat([0]);
+      var delta=synd[i];
+      for(k=1;k<errLoc.length;k++) delta^=mul(errLoc[errLoc.length-1-k],synd[i-k]);
+      if(delta!==0){
+        if(oldLoc.length>errLoc.length){
+          var no=[],dinv=inv(delta);
+          for(k=0;k<oldLoc.length;k++) no.push(mul(oldLoc[k],delta));
+          oldLoc=[];
+          for(k=0;k<errLoc.length;k++) oldLoc.push(mul(errLoc[k],dinv));
+          errLoc=no;
+        }
+        var sc=[];
+        for(k=0;k<oldLoc.length;k++) sc.push(mul(oldLoc[k],delta));
+        var off=errLoc.length-sc.length,tmp=errLoc.slice();
+        for(k=0;k<sc.length;k++) tmp[off+k]^=sc[k];
+        errLoc=tmp;
+      }
+    }
+    var nerr=errLoc.length-1;
+    if(nerr*2>nsym||nerr===0) return null;
+
+    var pos=[];
+    for(i=0;i<msg.length;i++)
+      if(peval(errLoc,EXP[(255-i)%255])===0) pos.push(msg.length-1-i);
+    if(pos.length!==nerr) return null;
+
+    var coef=[1];
+    for(i=0;i<pos.length;i++)
+      coef=pmul(coef,[EXP[(msg.length-1-pos[i])%255],1]);
+
+    var sr=synd.slice().reverse();
+    var ep=pmul(sr,coef);
+    ep=ep.slice(ep.length-coef.length+1);
+
+    var out=msg.slice();
+    for(i=0;i<pos.length;i++){
+      var xi=EXP[(msg.length-1-pos[i])%255],xin=inv(xi);
+      var num=peval(ep,xin),den=1;
+      for(j=0;j<pos.length;j++) if(j!==i){
+        var xj=EXP[(msg.length-1-pos[j])%255];
+        den=mul(den,1^mul(xin,xj));
+      }
+      if(!den) return null;
+      out[pos[i]]^=mul(num,inv(den));
+    }
+    for(i=0;i<nsym;i++) if(peval(out,EXP[i])) return null;
+    return out;
+  }
+
+  /* Локальне порогування блоками 8x8 — стійке до тіні й відблиску. */
+  function binarize(img){
+    var w=img.width,h=img.height,d=img.data,gray=new Uint8Array(w*h),i,j,x,y,bx,by;
+    for(i=0,j=0;j<gray.length;i+=4,j++)
+      gray[j]=(d[i]*77+d[i+1]*151+d[i+2]*28)>>8;
+
+    var BS=8,bw=Math.max(1,Math.ceil(w/BS)),bh=Math.max(1,Math.ceil(h/BS)),
+        lo=new Float32Array(bw*bh),hi=new Float32Array(bw*bh),gmin=255,gmax=0;
+    for(by=0;by<bh;by++) for(bx=0;bx<bw;bx++){
+      var mn=255,mx=0;
+      for(y=by*BS;y<Math.min(h,(by+1)*BS);y++)
+        for(x=bx*BS;x<Math.min(w,(bx+1)*BS);x++){
+          var g=gray[y*w+x]; if(g<mn) mn=g; if(g>mx) mx=g;
+        }
+      lo[by*bw+bx]=mn; hi[by*bw+bx]=mx;
+      if(mn<gmin) gmin=mn; if(mx>gmax) gmax=mx;
+    }
+
+    /* Поріг блоку — середина між min і max його околиці 3x3.
+       Це стійко і до тіні, і до розмиття (краї стають сірими). */
+    var th=new Float32Array(bw*bh);
+    for(by=0;by<bh;by++) for(bx=0;bx<bw;bx++){
+      var mn2=255,mx2=0,k,l;
+      for(k=-1;k<=1;k++) for(l=-1;l<=1;l++){
+        var yy=by+k,xx=bx+l;
+        if(yy<0||xx<0||yy>=bh||xx>=bw) continue;
+        if(lo[yy*bw+xx]<mn2) mn2=lo[yy*bw+xx];
+        if(hi[yy*bw+xx]>mx2) mx2=hi[yy*bw+xx];
+      }
+      /* однорідний блок (усе біле або все чорне) — беремо глобальну середину */
+      th[by*bw+bx]=(mx2-mn2>18)?(mn2+mx2)/2:(gmin+gmax)/2;
+    }
+
+    /* Білінійна інтерполяція порогу між центрами блоків — без сходинок. */
+    var bits=new Uint8Array(w*h);
+    for(y=0;y<h;y++){
+      var fy=y/BS-0.5,y0=Math.floor(fy),ty=fy-y0;
+      var y0c=y0<0?0:(y0>=bh?bh-1:y0),y1c=y0+1<0?0:(y0+1>=bh?bh-1:y0+1);
+      for(x=0;x<w;x++){
+        var fx=x/BS-0.5,x0=Math.floor(fx),tx=fx-x0;
+        var x0c=x0<0?0:(x0>=bw?bw-1:x0),x1c=x0+1<0?0:(x0+1>=bw?bw-1:x0+1);
+        var t00=th[y0c*bw+x0c],t01=th[y0c*bw+x1c],
+            t10=th[y1c*bw+x0c],t11=th[y1c*bw+x1c];
+        var t=(t00*(1-tx)+t01*tx)*(1-ty)+(t10*(1-tx)+t11*tx)*ty;
+        bits[y*w+x]=gray[y*w+x]<t?1:0;
+      }
+    }
+    return {bits:bits,w:w,h:h};
+  }
+
+  /* Патерни-шукачі за співвідношенням 1:1:3:1:1. */
+  function findFinders(b){
+    var w=b.w,h=b.h,bits=b.bits,out=[],x,y,i;
+
+    function ratio(c){
+      var tot=c[0]+c[1]+c[2]+c[3]+c[4];
+      if(tot<7) return 0;
+      var mu=tot/7,tol=mu/1.6;
+      return (Math.abs(mu-c[0])<tol&&Math.abs(mu-c[1])<tol&&
+              Math.abs(3*mu-c[2])<3*tol&&Math.abs(mu-c[3])<tol&&
+              Math.abs(mu-c[4])<tol)?mu:0;
+    }
+    function vcheck(cx,cy,mu){
+      if(cx<0||cx>=w||!bits[cy*w+cx]) return false;
+      var tol=mu/1.4,u=cy,d=cy,core=1,k;
+      /* центральна чорна смуга (3 модулі) */
+      for(k=cy-1;k>=0&&bits[k*w+cx];k--){ core++; u=k; }
+      for(k=cy+1;k<h&&bits[k*w+cx];k++){ core++; d=k; }
+      if(Math.abs(core-3*mu)>3*tol) return false;
+      /* білі кільця обабіч */
+      var wu=0,wd=0;
+      for(k=u-1;k>=0&&!bits[k*w+cx];k--) wu++;
+      for(k=d+1;k<h&&!bits[k*w+cx];k++) wd++;
+      if(Math.abs(wu-mu)>tol||Math.abs(wd-mu)>tol) return false;
+      /* зовнішні чорні смуги */
+      var bu=0,bd=0;
+      for(k=u-1-wu;k>=0&&bits[k*w+cx];k--) bu++;
+      for(k=d+1+wd;k<h&&bits[k*w+cx];k++) bd++;
+      return Math.abs(bu-mu)<tol&&Math.abs(bd-mu)<tol;
+    }
+
+    for(y=0;y<h;y+=2){
+      /* run[] — довжини однотонних смуг, col[] — їх колір (1=чорний).
+         Патерн Ч-Б-Ч-Б-Ч перевіряємо щоразу, коли завершилась чорна смуга. */
+      var run=[],col=[],cur=bits[y*w],len=0;
+      function flush(endX){
+        run.push(len); col.push(cur);
+        if(run.length>5){ run.shift(); col.shift(); }
+        if(run.length===5&&col[0]===1){
+          var mu=ratio(run);
+          if(mu){
+            var cx=Math.round(endX-run[4]-run[3]-run[2]/2);
+            if(vcheck(cx,y,mu)) out.push({x:cx,y:y,mu:mu});
+          }
+        }
+      }
+      for(x=0;x<w;x++){
+        var v=bits[y*w+x];
+        if(v===cur){ len++; continue; }
+        flush(x); cur=v; len=1;
+      }
+      flush(w);
+    }
+
+    var cl=[];
+    for(i=0;i<out.length;i++){
+      var p=out[i],hit=false;
+      for(var c2=0;c2<cl.length;c2++){
+        var c=cl[c2];
+        if(Math.abs(c.x-p.x)<c.mu*2&&Math.abs(c.y-p.y)<c.mu*2){
+          c.x=(c.x*c.n+p.x)/(c.n+1); c.y=(c.y*c.n+p.y)/(c.n+1);
+          c.mu=(c.mu*c.n+p.mu)/(c.n+1); c.n++; hit=true; break;
+        }
+      }
+      if(!hit) cl.push({x:p.x,y:p.y,mu:p.mu,n:1});
+    }
+    return cl;
+  }
+
+  /* Кут прямого кута = верх-лівий; далі верх-правий і низ-лівий. */
+  function orient(f){
+    function d2(p,q){ var dx=p.x-q.x,dy=p.y-q.y; return dx*dx+dy*dy; }
+    var ab=d2(f[0],f[1]),ac=d2(f[0],f[2]),bc=d2(f[1],f[2]),corner,p1,p2;
+    if(ab>=ac&&ab>=bc){ corner=f[2]; p1=f[0]; p2=f[1]; }
+    else if(ac>=ab&&ac>=bc){ corner=f[1]; p1=f[0]; p2=f[2]; }
+    else { corner=f[0]; p1=f[1]; p2=f[2]; }
+    var cross=(p1.x-corner.x)*(p2.y-corner.y)-(p1.y-corner.y)*(p2.x-corner.x);
+    return cross>0?{a:corner,b:p1,c:p2}:{a:corner,b:p2,c:p1};
+  }
+
+  function sample(b,o,size){
+    var m=[],bits=b.bits,w=b.w,h=b.h,r,c;
+    var ax=o.a.x,ay=o.a.y,n=size-7,
+        ux=(o.b.x-o.a.x)/n,uy=(o.b.y-o.a.y)/n,
+        vx=(o.c.x-o.a.x)/n,vy=(o.c.y-o.a.y)/n;
+    for(r=0;r<size;r++){
+      m[r]=[];
+      for(c=0;c<size;c++){
+        var fx=ax+(c-3)*ux+(r-3)*vx,fy=ay+(c-3)*uy+(r-3)*vy;
+        var x=Math.round(fx),y=Math.round(fy);
+        if(x<0||y<0||x>=w||y>=h){ m[r][c]=0; continue; }
+        var on=0,tot=0,dx,dy;
+        for(dy=-1;dy<=1;dy++) for(dx=-1;dx<=1;dx++){
+          var xx=x+dx,yy=y+dy;
+          if(xx>=0&&yy>=0&&xx<w&&yy<h){ on+=bits[yy*w+xx]; tot++; }
+        }
+        m[r][c]=(on*2>tot)?1:0;
+      }
+    }
+    return m;
+  }
+
+  function readFormat(m,size){
+    function at(list){ var v=0; for(var i=0;i<list.length;i++) v=(v<<1)|m[list[i][0]][list[i][1]]; return v; }
+    var l1=[[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+    var l2=[],i;
+    for(i=0;i<7;i++) l2.push([size-1-i,8]);
+    for(i=7;i>=0;i--) l2.push([8,size-1-i]);
+    var cand=[at(l1),at(l2)],best=null,bd=99;
+    for(var ci=0;ci<cand.length;ci++){
+      var v=cand[ci]^0x5412;
+      for(var t=0;t<32;t++){
+        var r=t<<10;
+        for(var k=4;k>=0;k--) if(r&(1<<(k+10))) r^=0x537<<k;
+        var full=(t<<10)|(r&0x3ff),x=full^v,dist=0;
+        while(x){ dist+=x&1; x>>>=1; }
+        if(dist<bd){ bd=dist; best=t; }
+      }
+    }
+    if(best===null||bd>3) return null;
+    return {ec:(best>>3)&3,mask:best&7};
+  }
+
+  function isFunc(r,c,size,ver){
+    if(r<9&&c<9) return true;
+    if(r<9&&c>=size-8) return true;
+    if(r>=size-8&&c<9) return true;
+    if(r===6||c===6) return true;
+    if(ver>=7&&((r<6&&c>=size-11)||(c<6&&r>=size-11))) return true;
+    var ap=alignPos(ver),i,j;
+    for(i=0;i<ap.length;i++) for(j=0;j<ap.length;j++){
+      if((i===0&&j===0)||(i===0&&j===ap.length-1)||(i===ap.length-1&&j===0)) continue;
+      if(Math.abs(r-ap[i])<=2&&Math.abs(c-ap[j])<=2) return true;
+    }
+    return false;
+  }
+
+  function unmask(m,size,ver,mask){
+    var out=[],r,c;
+    for(r=0;r<size;r++) out[r]=m[r].slice();
+    for(r=0;r<size;r++) for(c=0;c<size;c++){
+      if(isFunc(r,c,size,ver)) continue;
+      var inv2;
+      switch(mask){
+        case 0: inv2=(r+c)%2===0; break;
+        case 1: inv2=r%2===0; break;
+        case 2: inv2=c%3===0; break;
+        case 3: inv2=(r+c)%3===0; break;
+        case 4: inv2=(Math.floor(r/2)+Math.floor(c/3))%2===0; break;
+        case 5: inv2=((r*c)%2)+((r*c)%3)===0; break;
+        case 6: inv2=(((r*c)%2)+((r*c)%3))%2===0; break;
+        default: inv2=(((r+c)%2)+((r*c)%3))%2===0;
+      }
+      if(inv2) out[r][c]^=1;
+    }
+    return out;
+  }
+
+  function readCw(m,size,ver){
+    var out=[],cur=0,n=0,up=true,col,i,k;
+    for(col=size-1;col>0;col-=2){
+      if(col===6) col--;
+      for(i=0;i<size;i++){
+        var r=up?size-1-i:i;
+        for(k=0;k<2;k++){
+          var c=col-k;
+          if(isFunc(r,c,size,ver)) continue;
+          cur=(cur<<1)|m[r][c]; n++;
+          if(n===8){ out.push(cur); cur=0; n=0; }
+        }
+      }
+      up=!up;
+    }
+    return out;
+  }
+
+  function deinterleave(cw,ver){
+    var nb=BLK[ver],ecc=ECC[ver],dataTotal=dataCw(ver),
+        short=Math.floor(dataTotal/nb),extra=dataTotal%nb,sizes=[],i,b,c;
+    for(i=0;i<nb;i++) sizes.push(short+(i>=nb-extra?1:0));
+    var blocks=[],ecs=[];
+    for(i=0;i<nb;i++){ blocks.push([]); ecs.push([]); }
+    var idx=0,maxLen=short+(extra?1:0);
+    for(c=0;c<maxLen;c++) for(b=0;b<nb;b++)
+      if(c<sizes[b]){ if(idx>=cw.length) return null; blocks[b].push(cw[idx++]); }
+    for(c=0;c<ecc;c++) for(b=0;b<nb;b++){
+      if(idx>=cw.length) return null; ecs[b].push(cw[idx++]);
+    }
+    var data=[];
+    for(b=0;b<nb;b++){
+      var fixed=rsFix(blocks[b].concat(ecs[b]),ecc);
+      if(!fixed) return null;
+      data=data.concat(fixed.slice(0,sizes[b]));
+    }
+    return data;
+  }
+
+  function pad0(v,n){ var s=String(v); while(s.length<n) s='0'+s; return s; }
+
+  function decodeBits(data,ver){
+    var pos=0;
+    function read(n){
+      var v=0;
+      for(var i=0;i<n;i++){
+        var bi=pos>>3,bit=7-(pos&7);
+        if(bi>=data.length) throw 0;
+        v=(v<<1)|((data[bi]>>bit)&1); pos++;
+      }
+      return v;
+    }
+    var ALNUM='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:',out='';
+    try{
+      while(pos+4<=data.length*8){
+        var mode=read(4);
+        if(mode===0) break;
+        if(mode===7){ read(8); continue; }
+        var cb;
+        if(mode===1) cb=ver<10?10:(ver<27?12:14);
+        else if(mode===2) cb=ver<10?9:(ver<27?11:13);
+        else if(mode===4) cb=ver<10?8:16;
+        else break;
+        var cnt=read(cb),i;
+        if(mode===1){
+          for(i=0;i<cnt;){
+            var rem=cnt-i;
+            if(rem>=3){ out+=pad0(read(10),3); i+=3; }
+            else if(rem===2){ out+=pad0(read(7),2); i+=2; }
+            else { out+=String(read(4)); i+=1; }
+          }
+        } else if(mode===2){
+          for(i=0;i<cnt;){
+            if(cnt-i>=2){ var p=read(11); out+=ALNUM.charAt(Math.floor(p/45))+ALNUM.charAt(p%45); i+=2; }
+            else { out+=ALNUM.charAt(read(6)); i+=1; }
+          }
+        } else {
+          var bytes=[];
+          for(i=0;i<cnt;i++) bytes.push(read(8));
+          out+=new TextDecoder('utf-8').decode(new Uint8Array(bytes));
+        }
+      }
+    }catch(e){ return out||null; }
+    return out||null;
+  }
+
+  /* Читання за фіксованою сіткою (з можливим зсувом центрів). */
+  function readGrid(b,o,size,ver){
+    var m=sample(b,o,size),fmt=readFormat(m,size);
+    if(!fmt) return null;
+    var cw=readCw(unmask(m,size,ver,fmt.mask),size,ver);
+    if(cw.length<dataCw(ver)) return null;
+    var data=deinterleave(cw,ver);
+    if(!data) return null;
+    return decodeBits(data,ver);
+  }
+
+  /* Спроба зчитати код за конкретною трійкою патернів. */
+  function tryTriple(b,tri){
+    var o=orient(tri),
+        dx=o.b.x-o.a.x,dy=o.b.y-o.a.y,
+        ex=o.c.x-o.a.x,ey=o.c.y-o.a.y,
+        d1=Math.sqrt(dx*dx+dy*dy),d2=Math.sqrt(ex*ex+ey*ey),
+        mu=(o.a.mu+o.b.mu+o.c.mu)/3;
+    if(!mu||!d1||!d2) return null;
+    /* сторони мають бути приблизно рівні (квадрат) */
+    if(Math.abs(d1-d2)>Math.max(d1,d2)*0.25) return null;
+    /* і майже перпендикулярні */
+    var cosang=(dx*ex+dy*ey)/(d1*d2);
+    if(Math.abs(cosang)>0.3) return null;
+    var size=Math.round(((d1+d2)/2/mu+7-17)/4)*4+17;
+    if(size<21||size>177) return null;
+    var ver=(size-17)/4;
+
+    /* Розмиття зміщує центри на ~1px; на дальньому куті це виходить
+       за пів модуля. Пробуємо дрібні зсуви сітки. */
+    var r=readGrid(b,o,size,ver);
+    if(r) return r;
+    var step=mu*0.25,d;
+    for(d=0;d<8;d++){
+      var ang=d*Math.PI/4,
+          sx=Math.cos(ang)*step,sy=Math.sin(ang)*step;
+      var o2={a:{x:o.a.x+sx,y:o.a.y+sy,mu:o.a.mu},
+              b:{x:o.b.x+sx,y:o.b.y+sy,mu:o.b.mu},
+              c:{x:o.c.x+sx,y:o.c.y+sy,mu:o.c.mu}};
+      r=readGrid(b,o2,size,ver);
+      if(r) return r;
+    }
+    /* А також невелике «розтягування» сітки — коли центри зійшлись
+       трохи ближче/далі, ніж насправді. */
+    for(d=-2;d<=2;d++){
+      if(!d) continue;
+      var k=1+d*0.01;
+      var o3={a:{x:o.a.x,y:o.a.y,mu:o.a.mu},
+              b:{x:o.a.x+dx*k,y:o.a.y+dy*k,mu:o.b.mu},
+              c:{x:o.a.x+ex*k,y:o.a.y+ey*k,mu:o.c.mu}};
+      r=readGrid(b,o3,size,ver);
+      if(r) return r;
+    }
+    return null;
+  }
+
+  function decode(img){
+    var b=binarize(img),f=findFinders(b);
+    if(f.length<3) return null;
+    /* надійніші кандидати — ті, що знайдені кількома рядками */
+    f.sort(function(p,q){ return q.n-p.n; });
+    if(f.length>12) f=f.slice(0,12);
+    var i,j,k,r;
+    for(i=0;i<f.length-2;i++) for(j=i+1;j<f.length-1;j++) for(k=j+1;k<f.length;k++){
+      /* модуль має бути схожого розміру в усіх трьох */
+      var mx=Math.max(f[i].mu,f[j].mu,f[k].mu),
+          mn=Math.min(f[i].mu,f[j].mu,f[k].mu);
+      if(mx>mn*1.7) continue;
+      r=tryTriple(b,[f[i],f[j],f[k]]);
+      if(r) return r;
+    }
+    return null;
+  }
+
+  return {svg:svg,decode:decode};
 })();
 
 /* ── довідники ───────────────────────────────────────────────── */
@@ -749,7 +1219,7 @@ var TEXTF=['sn','bort','hours','date','unit','holder','callsign','post','holderP
 
 var S={sn:'',model:'',bort:'',hours:'',date:'',unit:'',holder:'',callsign:'',post:'',
        holderPhone:'',basis:'',note:'',
-       status:'',done:'',doneBy:'',techPhone:'',act:'',pm:'fil',kCard:1,kStick:1,chk:{},ph:[]};
+       status:'',done:'',doneBy:'',techPhone:'',act:'',pm:'fil',kCard:1,kStick:1,nStick:1,chk:{},ph:[]};
 
 function $(s){ return document.querySelector(s); }
 function esc(v){ return String(v==null?'':v).replace(/[&<>"]/g,function(c){
@@ -842,6 +1312,8 @@ function render(){
          '<div class="opt'+(S.kStick?' on':'')+'" data-pk="kStick" role="checkbox" tabindex="0" aria-checked="'+(!!S.kStick)+'">'+
            '<span class="box"><svg><use href="#i-check"/></svg></span><span>Аркуш стікерів</span></div>'+
        '</div></div>'+
+     (S.kStick?'<div class="field"><span class="lbl">Стікерів на аркуші</span>'+
+       '<div class="opts c4">'+nrdo(1)+nrdo(2)+nrdo(4)+nrdo(8)+'</div></div>':'')+
      '<div class="field"><span class="lbl">Обсяг</span>'+
        '<div class="opts c2">'+
          rdo('tpl','Весь шаблон')+rdo('fil','Тільки заповнене')+
@@ -863,6 +1335,11 @@ function blk(ic,t,n,body,cls){
 }
 function fld(l,inp,cls){ return '<label class="field'+(cls?' '+cls:'')+'"><span class="lbl">'+l+'</span>'+inp+'</label>'; }
 function opt(v,t,cur){ return '<option value="'+v+'"'+(cur===v?' selected':'')+'>'+t+'</option>'; }
+function nrdo(n){
+  var on=(+S.nStick||1)===n;
+  return '<div class="opt rad'+(on?' on':'')+'" data-ns="'+n+'" role="radio" tabindex="0" aria-checked="'+on+'">'+
+    '<span class="box"><svg><use href="#i-check"/></svg></span><span>'+n+'</span></div>';
+}
 function rdo(v,t){
   return '<div class="opt rad'+(S.pm===v?' on':'')+'" data-pm="'+v+'" role="radio" tabindex="0" aria-checked="'+(S.pm===v)+'">'+
     '<span class="box"><i></i></span><span>'+t+'</span></div>';
@@ -945,18 +1422,26 @@ function stick(){
   });
   cells.push(['Інше',cnt('st')>0||cnt('kit')>0]);
   return '<div class="stick">'+
-    '<div class="s-top"><span class="s-sn">'+esc((S.sn||'----').slice(-4))+'</span>'+
-      '<span class="s-md">'+esc(SHORT[S.model]||'')+'<br>'+
-        '<b class="st'+(S.status==='fix'?' ok':'')+'">'+esc(STLBL[S.status]||'')+'</b></span></div>'+
-    '<div class="s-who"><span>'+esc(S.holder||'')+'</span>'+
-      '<span class="r">'+esc(S.unit||'')+'</span></div>'+
+    /* головний блок — найкрупніше */
+    '<div class="s-hd">'+
+      '<div class="s-unit">'+esc(S.unit||'')+
+        (S.status?'<b class="st'+(S.status==='fix'?' ok':'')+'">'+esc(STLBL[S.status])+'</b>':'')+
+      '</div>'+
+      '<div class="s-name">'+esc(S.holder||'')+
+        (S.callsign?' <span class="cs">«'+esc(S.callsign)+'»</span>':'')+'</div>'+
+      '<div class="s-mdl">'+esc(SHORT[S.model]||'')+'</div>'+
+      '<div class="s-sn">'+esc(S.sn||'')+'</div>'+
+    '</div>'+
+    /* другорядне — дрібніше */
+    '<div class="s-meta"><span>'+esc(fmtDate(S.date))+'</span>'+
+      '<span class="r">'+(S.bort?'борт '+esc(S.bort):'')+'</span></div>'+
+    /* галочки пошкоджень */
     '<div class="s-list">'+damaged().map(function(k){
       return '<span class="s-i on"><span class="box"><svg><use href="#i-check"/></svg></span>'+
         esc(shortName(k))+'</span>'; }).join('')+'</div>'+
     '<div class="s-grid">'+cells.map(function(c){
       return '<div class="s-c'+(c[1]?' on':'')+'"><span class="box"><svg><use href="#i-check"/></svg></span>'+c[0]+'</div>';
-    }).join('')+'</div>'+
-    '<div class="s-ft"><span>'+esc(S.sn||'')+'</span><span>'+esc(fmtDate(S.date))+'</span></div></div>';
+    }).join('')+'</div></div>';
 }
 
 
@@ -967,7 +1452,7 @@ function bind(){
   $('#f-model').onchange=function(){ S.model=this.value; save(); render(); };
   var c=$('#card');
   function act(e){
-    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm]');
+    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns]');
     if(!t) return;
     if(t.dataset.k!==undefined){ flip(t); return; }
     if(t.dataset.st!==undefined){
@@ -980,7 +1465,15 @@ function bind(){
     if(t.dataset.pk!==undefined){
       S[t.dataset.pk]=S[t.dataset.pk]?0:1;
       t.classList.toggle('on',!!S[t.dataset.pk]);
-      t.setAttribute('aria-checked',!!S[t.dataset.pk]); return;
+      t.setAttribute('aria-checked',!!S[t.dataset.pk]);
+      if(t.dataset.pk==='kStick') render();   /* показати/сховати вибір кількості */
+      return;
+    }
+    if(t.dataset.ns!==undefined){
+      S.nStick=+t.dataset.ns;
+      [].forEach.call(t.parentNode.children,function(x){
+        x.classList.toggle('on',x===t); x.setAttribute('aria-checked',x===t); });
+      refreshStick(); return;
     }
     if(t.dataset.pm!==undefined){
       S.pm=t.dataset.pm;
@@ -990,7 +1483,7 @@ function bind(){
   }
   c.addEventListener('click',act);
   c.addEventListener('keydown',function(e){
-    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm]');
+    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns]');
     if(t&&(e.key===' '||e.key==='Enter')){ e.preventDefault(); act({target:e.target}); } });
   var pb=$('#bPhoto');
   if(pb) pb.onclick=function(){ $('#photoIn').click(); };
@@ -1025,7 +1518,7 @@ function flip(t){
   save(); refreshDone(); refreshStick(); refreshQR();
 }
 function sheet(){
-  var h='',n=4;
+  var h='',n=Math.max(1,Math.min(12,+S.nStick||1));
   for(var i=0;i<n;i++) h+=stick();
   return h;
 }
@@ -1460,11 +1953,6 @@ function conflictDlg(d,loc,srv,done){
     done();
   };
 }
-function esc(v){
-  return String(v==null?'':v).replace(/[&<>"]/g,function(c){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
-  });
-}
 
 /* ── сканер ──────────────────────────────────────────────────── */
 var stream=null,det=null,raf=0;
@@ -1503,31 +1991,221 @@ function accept(v){
   });
   return true;
 }
-async function startCam(){
-  try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}); }
-  catch(e){ $('#camoff').textContent='Немає доступу до камери. Потрібен https або localhost.'; return; }
-  var v=$('#vid'); v.srcObject=stream; $('#camoff').hidden=true; $('#frame').hidden=false;
-  await v.play();
-  if(!hasDet()){ $('#camoff').hidden=false;
-    $('#camoff').textContent='Розпізнавання QR недоступне в цьому браузері. Введіть S/N вручну.'; return; }
-  det=det||mkDet();
+var camList=[],camIdx=0,scanCv=null,scanCx=null,lastScan=0;
+
+/* Список доступних камер. Мітки доступні лише після дозволу. */
+async function listCams(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.enumerateDevices) return [];
+  try{
+    var d=await navigator.mediaDevices.enumerateDevices();
+    return d.filter(function(x){ return x.kind==='videoinput'; });
+  }catch(e){ return []; }
+}
+
+/* Малює кнопки вибору камери, якщо їх більше однієї. */
+function renderCamPick(){
+  var box=$('#campick'); if(!box) return;
+  if(camList.length<2){ box.hidden=true; box.innerHTML=''; return; }
+  box.hidden=false;
+  box.innerHTML=camList.map(function(c,i){
+    var lbl=c.label||('Камера '+(i+1));
+    /* короткі назви: Safari віддає довгі рядки */
+    lbl=lbl.replace(/\s*\(.*?\)\s*/g,'').trim()||('Камера '+(i+1));
+    if(lbl.length>18) lbl=lbl.slice(0,17)+'…';
+    return '<button type="button" class="opt'+(i===camIdx?' on':'')+'" data-cam="'+i+'">'+
+           esc(lbl)+'</button>';
+  }).join('');
+  [].forEach.call(box.querySelectorAll('[data-cam]'),function(b){
+    b.onclick=function(){
+      var i=+b.getAttribute('data-cam');
+      if(i===camIdx) return;
+      camIdx=i; try{ localStorage.setItem('dc:cam',camList[i].deviceId); }catch(e){}
+      restartCam();
+    };
+  });
+}
+
+function camConstraints(){
+  var v={width:{ideal:1280},height:{ideal:720}};
+  if(camList.length&&camList[camIdx]&&camList[camIdx].deviceId)
+    v.deviceId={exact:camList[camIdx].deviceId};
+  else v.facingMode={ideal:'environment'};
+  return {video:v};
+}
+
+async function restartCam(){
+  stopCam();
+  $('#camoff').hidden=true; $('#frame').hidden=false;
+  await startStream();
+}
+
+async function startStream(){
+  try{ stream=await navigator.mediaDevices.getUserMedia(camConstraints()); }
+  catch(e){
+    try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}}); }
+    catch(e2){
+      $('#frame').hidden=true; $('#camoff').hidden=false;
+      $('#camoff').textContent='Немає доступу до камери. Потрібен https або localhost.';
+      return false;
+    }
+  }
+  var v=$('#vid'); v.srcObject=stream;
+  v.setAttribute('playsinline','');   /* iOS: не відкривати на весь екран */
+  v.muted=true;
+  try{ await v.play(); }catch(e){}
+  applyZoom();
+  torchOn=false; refreshTorch();
+  scanLoop();
+  return true;
+}
+
+/* Зум, якщо камера його підтримує (корисно для дрібних QR). */
+function camTrack(){ return stream?stream.getVideoTracks()[0]:null; }
+function zoomCaps(){
+  var t=camTrack();
+  if(!t||!t.getCapabilities) return null;
+  try{ var c=t.getCapabilities(); return c&&c.zoom?c:null; }catch(e){ return null; }
+}
+/* Ліхтарик: доступний лише для тилової камери і лише коли потік
+   уже запущено. Safari на iOS підтримує з iOS 17. */
+var torchOn=false;
+function torchCap(){
+  var t=camTrack();
+  if(!t||!t.getCapabilities) return false;
+  try{ var c=t.getCapabilities(); return !!(c&&c.torch); }catch(e){ return false; }
+}
+function refreshTorch(){
+  var btn=$('#bTorch');
+  if(!btn) return;
+  if(!torchCap()){ btn.hidden=true; torchOn=false; return; }
+  btn.hidden=false;
+  btn.classList.toggle('on',torchOn);
+  btn.setAttribute('aria-pressed',torchOn);
+}
+async function toggleTorch(){
+  var t=camTrack();
+  if(!t||!torchCap()) return;
+  torchOn=!torchOn;
+  try{ await t.applyConstraints({advanced:[{torch:torchOn}]}); }
+  catch(e){ torchOn=false; toast('Ліхтарик недоступний'); }
+  refreshTorch();
+}
+
+var zoomVal=1;
+function applyZoom(){
+  var c=zoomCaps(),sl=$('#zoom');
+  if(!c){ if(sl) sl.parentNode.hidden=true; return; }
+  if(sl){
+    sl.parentNode.hidden=false;
+    sl.min=c.zoom.min; sl.max=c.zoom.max; sl.step=c.zoom.step||0.1;
+    if(zoomVal<c.zoom.min||zoomVal>c.zoom.max) zoomVal=c.zoom.min;
+    sl.value=zoomVal;
+  }
+  setZoom(zoomVal);
+}
+function setZoom(z){
+  var t=camTrack(); if(!t||!t.applyConstraints) return;
+  zoomVal=z;
+  try{ t.applyConstraints({advanced:[{zoom:z}]}); }catch(e){}
+}
+
+/* Один прохід розпізнавання: BarcodeDetector, інакше власний декодер. */
+async function scanFrame(){
+  var v=$('#vid');
+  if(!v||!v.videoWidth) return false;
+
+  if(hasDet()){
+    try{
+      det=det||mkDet();
+      var r=await det.detect(v);
+      if(r&&r.length&&accept(r[0].rawValue)) return true;
+      return false;
+    }catch(e){ /* якщо детектор зламався — падаємо на власний */ }
+  }
+
+  /* Власний декодер (Safari/iOS). Зменшуємо кадр до ~480px по довгій
+     стороні: цього досить для QR і значно швидше. */
+  if(!scanCv){ scanCv=document.createElement('canvas'); scanCx=scanCv.getContext('2d',{willReadFrequently:true}); }
+  var vw=v.videoWidth,vh=v.videoHeight,k=Math.min(1,640/Math.max(vw,vh));
+  var w=Math.round(vw*k),h=Math.round(vh*k);
+  if(scanCv.width!==w||scanCv.height!==h){ scanCv.width=w; scanCv.height=h; }
+  scanCx.drawImage(v,0,0,w,h);
+  /* Спершу центральний квадрат (там, де рамка), потім увесь кадр. */
+  var side=Math.round(Math.min(w,h)*0.8),
+      sx=Math.round((w-side)/2),sy=Math.round((h-side)/2);
+  var tries=[[sx,sy,side,side],[0,0,w,h]];
+  for(var i=0;i<tries.length;i++){
+    var t=tries[i],img;
+    try{ img=scanCx.getImageData(t[0],t[1],t[2],t[3]); }catch(e){ continue; }
+    var txt=null;
+    try{ txt=QR.decode(img); }catch(e){}
+    if(txt&&accept(txt)) return true;
+  }
+  return false;
+}
+
+function scanLoop(){
+  /* Власний декодер важчий за нативний. Робимо паузу між спробами
+     пропорційно до часу останньої — щоб інтерфейс лишався плавним. */
+  var gap=120;
   var tick=async function(){
     if(!stream) return;
-    try{ var r=await det.detect(v); if(r&&r.length&&accept(r[0].rawValue)) return; }catch(e){}
+    var now=Date.now();
+    if(now-lastScan>=(hasDet()?0:gap)){
+      lastScan=now;
+      var t0=Date.now(),hit=false;
+      try{ hit=await scanFrame(); }catch(e){}
+      if(hit) return;
+      if(!hasDet()){
+        var took=Date.now()-t0;
+        gap=Math.max(60,Math.min(400,Math.round(took*0.8)));
+      }
+    }
     raf=requestAnimationFrame(tick);
   };
   raf=requestAnimationFrame(tick);
 }
+
+async function startCam(){
+  $('#camoff').hidden=true; $('#frame').hidden=false;
+  if(!await startStream()) return;
+  /* мітки камер стають доступні лише після дозволу */
+  camList=await listCams();
+  var saved=null; try{ saved=localStorage.getItem('dc:cam'); }catch(e){}
+  if(saved){
+    var k=camList.findIndex?camList.findIndex(function(c){ return c.deviceId===saved; }):-1;
+    if(k>0){ camIdx=k; renderCamPick(); await restartCam(); return; }
+  }
+  renderCamPick();
+}
 function stopCam(){
-  cancelAnimationFrame(raf);
+  cancelAnimationFrame(raf); lastScan=0;
   if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream=null; }
+  torchOn=false;
+  var b=$('#bTorch'); if(b){ b.hidden=true; b.classList.remove('on'); }
   var f=$('#frame'),o=$('#camoff'); if(f) f.hidden=true; if(o) o.hidden=false;
 }
 async function fromFile(f){
-  if(!hasDet()){ toast('Розпізнавання недоступне'); return; }
-  try{ var b=await createImageBitmap(f),r=await (det=det||mkDet()).detect(b);
-    if(!(r&&r.length&&accept(r[0].rawValue))) toast('QR не знайдено');
-  }catch(e){ toast('QR не знайдено'); }
+  var bmp=null;
+  try{ bmp=await createImageBitmap(f); }catch(e){ toast('Файл не читається'); return; }
+  if(hasDet()){
+    try{ var r=await (det=det||mkDet()).detect(bmp);
+      if(r&&r.length&&accept(r[0].rawValue)) return;
+    }catch(e){}
+  }
+  /* власний декодер: пробуємо кілька масштабів */
+  var sizes=[900,600,1400];
+  for(var i=0;i<sizes.length;i++){
+    var k=Math.min(1,sizes[i]/Math.max(bmp.width,bmp.height)),
+        w=Math.round(bmp.width*k),h=Math.round(bmp.height*k);
+    var cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    var cx=cv.getContext('2d',{willReadFrequently:true});
+    cx.drawImage(bmp,0,0,w,h);
+    var txt=null;
+    try{ txt=QR.decode(cx.getImageData(0,0,w,h)); }catch(e){}
+    if(txt&&accept(txt)) return;
+  }
+  toast('QR не знайдено');
 }
 function fromJson(f){
   var rd=new FileReader();
@@ -1546,6 +2224,8 @@ function showScan(){
 }
 
 $('#bStart').onclick=startCam;
+$('#zoom').oninput=function(){ setZoom(+this.value); };
+$('#bTorch').onclick=toggleTorch;
 $('#bFile').onclick=function(){ $('#file').click(); };
 $('#file').onchange=function(){ if(this.files[0]) fromFile(this.files[0]); this.value=''; };
 $('#bOpen').onclick=function(){ $('#json').click(); };
