@@ -189,6 +189,26 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .sheet>*:nth-child(n+2){display:none}
 .stick{background:var(--floor2);border:1px solid var(--seam2);border-radius:8px;
   padding:10px;display:grid;gap:8px;align-content:start;align-self:start}
+/* Позначки на стікері: різні форми в різних кутах, щоб не плутались. */
+.stick{position:relative}
+.s-mk{position:absolute;display:block;pointer-events:none}
+/* трикутник — верхній правий кут */
+.mk-tri{top:7px;right:7px;width:0;height:0;
+  border-left:9px solid transparent;border-right:9px solid transparent;
+  border-bottom:16px solid var(--stencil)}
+/* коло і квадрат — праворуч на рівні рядка з датою: під сіткою
+   вузлів місця немає, а тут вільно й добре видно */
+.mk-cir{top:52px;right:7px;width:17px;height:17px;border-radius:50%;
+  background:var(--stencil)}
+.mk-sq{top:52px;right:7px;width:16px;height:16px;background:var(--stencil)}
+.mklegend{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--faded);
+  padding-top:2px}
+.mklegend span{display:flex;align-items:center;gap:5px}
+.mklegend i{flex:none}
+.lg-tri{width:0;height:0;border-left:6px solid transparent;
+  border-right:6px solid transparent;border-bottom:10px solid var(--stencil2)}
+.lg-cir{width:11px;height:11px;border-radius:50%;background:var(--stencil2)}
+.lg-sq{width:10px;height:10px;background:var(--stencil2)}
 .s-hd{display:grid;gap:3px}
 .s-unit{display:flex;align-items:baseline;gap:8px;font-size:21px;font-weight:800;
   line-height:1.1;overflow:hidden}
@@ -418,8 +438,15 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
   body.pr-stick .sheet>*:nth-child(n+2){display:grid}
   body.pr-stick .stick{background:#fff;border:0;border-right:.5pt dashed #000;
     border-bottom:.5pt dashed #000;border-radius:0;
-    width:70mm;height:50mm;padding:2.6mm;gap:1.2mm;break-inside:avoid;margin:0;
-    align-content:start;overflow:hidden}
+    width:70mm;height:50mm;padding:2.6mm 8mm 2.6mm 2.6mm;gap:1.2mm;
+    break-inside:avoid;margin:0;align-content:start;overflow:hidden}
+  /* Позначки: суцільний чорний, помітні з відстані. */
+  body.pr-stick .mk-tri{top:2mm;right:2mm;
+    border-left:2.6mm solid transparent;border-right:2.6mm solid transparent;
+    border-bottom:4.6mm solid #000}
+  body.pr-stick .mk-cir{top:24.2mm;right:2mm;width:5mm;height:5mm;background:#000;
+    border-radius:50%}
+  body.pr-stick .mk-sq{top:24.4mm;right:2mm;width:4.6mm;height:4.6mm;background:#000}
   body.pr-stick .s-hd{gap:.8mm}
   body.pr-stick .s-unit{font-size:15pt;line-height:1.05;color:#000}
   body.pr-stick .s-unit .st{font-size:8pt;color:#000}
@@ -1361,12 +1388,15 @@ var ARMCOLS=[
  ['rtk','Антена RTK',only('m30t','m4t','m4e')]];
 var ABBR={1:'ПП',2:'ПЛ',3:'ЗЛ',4:'ЗП'};
 var VERDICT=['Діагностика','Ремонт','Заміна вузлів','Списання'];
+/* Підтвердження поломки. Порожнє = не підтверджено. */
+var CONFIRM=[['own','Підтверджено'],['ind','Незалежна діагностика']];
+var CONFLBL={own:'ПІДТВЕРДЖЕНО',ind:'НЕЗАЛЕЖНА ДІАГНОСТИКА'};
 var STATUS=[['fix','Відновлено'],['out','Не підлягає ремонту']];
 var TEXTF=['sn','bort','hours','date','unit','holder','callsign','post','holderPhone',
-           'basis','cost','note','status','done','doneBy','techPhone','act'];
+           'basis','cost','confirm','note','status','done','doneBy','techPhone','act'];
 
 var S={sn:'',model:'',bort:'',hours:'',date:'',unit:'',holder:'',callsign:'',post:'',
-       holderPhone:'',basis:'',cost:'',note:'',
+       holderPhone:'',basis:'',cost:'',confirm:'',note:'',
        status:'',done:'',doneBy:'',techPhone:'',act:'',pm:'fil',kCard:1,kStick:1,nStick:1,chk:{},ph:[]};
 
 function $(s){ return document.querySelector(s); }
@@ -1424,6 +1454,13 @@ function render(){
   });
 
   h+=blk('i-alert','Висновок',cnt('vd'),
+    '<div class="field"><span class="lbl">Підтвердження поломки</span>'+
+      '<div class="opts c2">'+CONFIRM.map(function(c){
+        var on=S.confirm===c[0];
+        return '<div class="opt'+(on?' on':'')+'" data-cf="'+c[0]+'" role="radio" '+
+          'tabindex="0" aria-checked="'+on+'">'+
+          '<span class="box"><svg><use href="#i-check"/></svg></span><span>'+c[1]+'</span></div>';
+      }).join('')+'</div></div>'+
     '<div class="opts">'+VERDICT.map(function(v,i){ return chk('vd.'+i,v); }).join('')+
       '<div class="field ta full"><span class="lbl">Опис пошкоджень</span>'+
       '<textarea id="f-note">'+esc(S.note)+'</textarea></div>'+
@@ -1454,7 +1491,12 @@ function render(){
   h+=blk('i-qr','QR','','<div class="qrbox" id="qrbox">'+QR.svg(payload(),150)+'</div>','qrblk');
   h+='</div>';
   h+='<div class="blk" id="stickBlk"><div class="blkh"><svg><use href="#i-tag"/></svg>Стікер'+
-     '</div><div class="sheet">'+sheet()+'</div></div>';
+     '</div><div class="sheet">'+sheet()+'</div>'+
+     '<div class="mklegend noprint">'+
+       '<span><i class="lg-tri"></i>є підстава</span>'+
+       '<span><i class="lg-cir"></i>підтверджено</span>'+
+       '<span><i class="lg-sq"></i>незалежна діагностика</span>'+
+     '</div></div>';
 
   h+=photoBlk();
 
@@ -1577,7 +1619,16 @@ function stick(){
     cells.push([b.s,cnt(id)>0]);
   });
   cells.push(['Інше',cnt('st')>0||cnt('kit')>0]);
+  var marks='';
+  if(S.basis)
+    marks+='<span class="s-mk mk-tri" title="Є підстава" aria-label="Є підстава"></span>';
+  if(S.confirm==='own')
+    marks+='<span class="s-mk mk-cir" title="Підтверджено" aria-label="Підтверджено"></span>';
+  else if(S.confirm==='ind')
+    marks+='<span class="s-mk mk-sq" title="Незалежна діагностика" aria-label="Незалежна діагностика"></span>';
+
   return '<div class="stick">'+
+    marks+
     /* головний блок — найкрупніше */
     '<div class="s-hd">'+
       '<div class="s-unit">'+esc(S.unit||'')+
@@ -1608,7 +1659,7 @@ function bind(){
   $('#f-model').onchange=function(){ S.model=this.value; save(); render(); };
   var c=$('#card');
   function act(e){
-    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns]');
+    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns],[data-cf]');
     if(!t) return;
     if(t.dataset.k!==undefined){ flip(t); return; }
     if(t.dataset.st!==undefined){
@@ -1625,6 +1676,13 @@ function bind(){
       if(t.dataset.pk==='kStick') render();   /* показати/сховати вибір кількості */
       return;
     }
+    if(t.dataset.cf!==undefined){
+      S.confirm=(S.confirm===t.dataset.cf)?'':t.dataset.cf;
+      [].forEach.call(t.parentNode.children,function(x){
+        var on=x.dataset.cf===S.confirm&&!!S.confirm;
+        x.classList.toggle('on',on); x.setAttribute('aria-checked',on); });
+      save(); refreshStick(); return;
+    }
     if(t.dataset.ns!==undefined){
       S.nStick=+t.dataset.ns;
       [].forEach.call(t.parentNode.children,function(x){
@@ -1639,7 +1697,7 @@ function bind(){
   }
   c.addEventListener('click',act);
   c.addEventListener('keydown',function(e){
-    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns]');
+    var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm],[data-ns],[data-cf]');
     if(t&&(e.key===' '||e.key==='Enter')){ e.preventDefault(); act({target:e.target}); } });
   var pb=$('#bPhoto');
   if(pb) pb.onclick=function(){ $('#photoIn').click(); };
@@ -1980,7 +2038,8 @@ function refreshSaveBtn(){
    Якщо одна сторона порожня — беремо непорожню (це доповнення, не конфлікт). */
 var FLBL={sn:'S/N',bort:'Бортовий номер',hours:'Наліт',date:'Дата',unit:'Підрозділ',
  holder:'Власник',callsign:'Позивний',post:'Посада',holderPhone:'Телефон власника',
- basis:'Підстава',cost:'Вартість виробу',note:'Примітка',status:'Статус',
+ basis:'Підстава',cost:'Вартість виробу',confirm:'Підтвердження поломки',
+ note:'Примітка',status:'Статус',
  done:'Виконані роботи',doneBy:'Виконав',techPhone:'Телефон техніка',
  act:'Акт',model:'Модель'};
 
