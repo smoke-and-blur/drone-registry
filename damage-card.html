@@ -222,6 +222,20 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 .dlg{background:var(--crate);border:1px solid var(--seam2);border-radius:12px;
   width:100%;max-width:420px;padding:16px;display:grid;gap:var(--gap)}
 .dlg h3{font-size:15px;display:flex;align-items:center;gap:8px}
+.ph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:var(--gap)}
+.ph-grid:empty{display:none}
+.ph{position:relative;margin:0;aspect-ratio:1;border-radius:10px;overflow:hidden;
+  border:1px solid var(--seam);background:var(--floor2)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in}
+.ph-x{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:7px;
+  border:1px solid var(--seam2);background:rgba(14,18,16,.82);color:var(--stencil2);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.ph-x:hover{color:#E9A79E;border-color:#D66E60}
+.ph-x svg{width:13px;height:13px}
+.phblk .btn[disabled]{opacity:.5;cursor:not-allowed}
+.ph-ov{cursor:zoom-out}
+.ph-ov img{max-width:96vw;max-height:92vh;border-radius:10px;
+  border:1px solid var(--seam2);object-fit:contain}
 .cdlg{max-width:560px}
 .cdlg h3 svg{color:var(--khaki)}
 .cnote{font-size:12.5px;color:var(--stencil2);line-height:1.5}
@@ -393,6 +407,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
 <body>
 <svg style="display:none" aria-hidden="true">
   <symbol id="i-drone" viewBox="0 0 24 24"><path d="M4 4h4v4H4zM16 4h4v4h-4zM4 16h4v4H4zM16 16h4v4h-4zM8 8l3 3M16 8l-3 3M8 16l3-3M16 16l-3-3"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M15 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v2M10 12h10m0 0-3-3m3 3-3 3"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
   <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20h1"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6.5"/></symbol>
@@ -420,6 +435,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
     <div class="spacer"></div>
     <button class="iconbtn" id="bScan" title="Сканувати QR"><svg><use href="#i-qr"/></svg></button>
     <a class="iconbtn noprint" href="/list" title="Реєстр карток"><svg><use href="#i-list"/></svg></a>
+    <a class="iconbtn noprint" href="/logout" title="Вийти"><svg><use href="#i-out"/></svg></a>
     <button class="iconbtn" id="bShare" title="Поділитися"><svg><use href="#i-share"/></svg></button>
     <button class="iconbtn" id="bPrint" title="Друк картки A4"><svg><use href="#i-print"/></svg></button>
   </div>
@@ -445,6 +461,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--faded) 50%),
       </div>
       <input type="file" id="file" accept="image/*" hidden>
       <input type="file" id="json" accept="application/json,.json" hidden>
+  <input type="file" id="photoIn" accept="image/*" multiple hidden>
     </div>
     <div id="card" hidden></div>
   </div>
@@ -807,6 +824,8 @@ function render(){
   h+='<div class="blk" id="stickBlk"><div class="blkh"><svg><use href="#i-tag"/></svg>Стікер'+
      '</div><div class="sheet">'+sheet()+'</div></div>';
 
+  h+=photoBlk();
+
   h+='<div class="blk noprint"><div class="blkh"><svg><use href="#i-print"/></svg>Друк</div>'+
      '<div class="field"><span class="lbl">Що друкувати</span>'+
        '<div class="opts c2">'+
@@ -965,6 +984,14 @@ function bind(){
   c.addEventListener('keydown',function(e){
     var t=e.target.closest('[data-k],[data-st],[data-pk],[data-pm]');
     if(t&&(e.key===' '||e.key==='Enter')){ e.preventDefault(); act({target:e.target}); } });
+  var pb=$('#bPhoto');
+  if(pb) pb.onclick=function(){ $('#photoIn').click(); };
+  [].forEach.call(document.querySelectorAll('#card [data-pdel]'),function(b){
+    b.onclick=function(e){ e.stopPropagation(); delPhoto(+b.getAttribute('data-pdel')); };
+  });
+  [].forEach.call(document.querySelectorAll('#card img[data-pi]'),function(im){
+    im.onclick=function(){ viewPhoto(+im.getAttribute('data-pi')); };
+  });
   $('#bPrint2').onclick=printNow;
   $('#bCfg').onclick=function(){ dl(cfgBlob(),fname()+'.json'); };
   $('#bShare2').onclick=shareDlg;
@@ -1034,6 +1061,75 @@ function save(){
   try{ localStorage.setItem('dc:'+S.sn,pack()); }catch(e){}
   sync();
 }
+/* ── фото: лише для перегляду, у друк не потрапляє ───────────── */
+var MAXPH=8,MAXPX=1280,JPEGQ=.72;
+
+function photoBlk(){
+  var h='<div class="ph-grid">';
+  (S.photos||[]).forEach(function(p,i){
+    h+='<figure class="ph"><img src="'+p.data+'" alt="" loading="lazy" data-pi="'+i+'">'+
+       '<button class="ph-x" data-pdel="'+i+'" title="Видалити" type="button">'+
+       '<svg><use href="#i-x"/></svg></button></figure>';
+  });
+  h+='</div>';
+  var n=(S.photos||[]).length;
+  h+='<button class="btn" id="bPhoto" type="button"'+(n>=MAXPH?' disabled':'')+'>'+
+     '<svg><use href="#i-cam"/></svg>'+(n>=MAXPH?'Ліміт '+MAXPH+' фото':'Додати фото')+'</button>';
+  return blk('i-cam','Фото',n||'',h,'noprint phblk');
+}
+
+/* Стиснення в браузері: довга сторона <= MAXPX, JPEG. */
+function shrink(file,cb){
+  var fr=new FileReader();
+  fr.onload=function(){
+    var im=new Image();
+    im.onload=function(){
+      var w=im.width,hh=im.height,k=Math.min(1,MAXPX/Math.max(w,hh));
+      var cv=document.createElement('canvas');
+      cv.width=Math.round(w*k); cv.height=Math.round(hh*k);
+      cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);
+      cb(cv.toDataURL('image/jpeg',JPEGQ));
+    };
+    im.onerror=function(){ cb(null); };
+    im.src=fr.result;
+  };
+  fr.onerror=function(){ cb(null); };
+  fr.readAsDataURL(file);
+}
+
+function addPhotos(files){
+  var left=MAXPH-(S.photos||[]).length;
+  if(left<=0){ toast('Максимум '+MAXPH+' фото'); return; }
+  var list=[].slice.call(files,0,left),pend=list.length;
+  if(!pend) return;
+  list.forEach(function(f){
+    if(!/^image\//.test(f.type)){ if(!--pend) afterPhotos(); return; }
+    shrink(f,function(d){
+      if(d){
+        S.photos=S.photos||[];
+        S.photos.push({id:String(Date.now())+Math.random().toString(36).slice(2,7),
+                       data:d,note:'',at:new Date().toISOString()});
+      } else toast('Не вдалося прочитати фото');
+      if(!--pend) afterPhotos();
+    });
+  });
+}
+function afterPhotos(){
+  dirty=true; save(); render();
+}
+function delPhoto(i){
+  if(!S.photos||!S.photos[i]) return;
+  S.photos.splice(i,1);
+  dirty=true; save(); render();
+}
+function viewPhoto(i){
+  var p=(S.photos||[])[i]; if(!p) return;
+  var ov=document.createElement('div'); ov.className='ov noprint ph-ov';
+  ov.innerHTML='<img src="'+p.data+'" alt="">';
+  ov.onclick=function(){ document.body.removeChild(ov); };
+  document.body.appendChild(ov);
+}
+
 /* ── синхронізація з сервером ────────────────────────────────── */
 /* Запис на сервер увімкнено лише після того, як для цього S/N
    вирішено конфлікт (або його не було). Доки dirty=false —
@@ -1047,27 +1143,28 @@ function snap(){
   TEXTF.forEach(function(k){ if(S[k]) o[k]=S[k]; });
   var on=[]; for(var k in S.chk){ if(S.chk[k]) on.push(k); }
   on.sort();
-  return {sn:S.sn,model:S.model,fields:o,checks:on};
+  return {sn:S.sn,model:S.model,fields:o,checks:on,photos:S.photos||[]};
 }
 /* Стан з рядка localStorage — без чіпання S. */
-function snapOf(q){
+function snapOf(q,photos){
   var p=new URLSearchParams(q),o={},mdl=p.get('model')||'';
   TEXTF.forEach(function(k){ if(p.get(k)) o[k]=p.get(k); });
   var on=(p.get('c')||'').split(',').filter(Boolean); on.sort();
-  return {sn:p.get('sn')||'',model:mdl,fields:o,checks:on};
+  return {sn:p.get('sn')||'',model:mdl,fields:o,checks:on,photos:photos||[]};
 }
 /* Стан з відповіді сервера. */
 function snapOfCard(c){
   var o={};
   TEXTF.forEach(function(k){ if(c.fields&&c.fields[k]) o[k]=c.fields[k]; });
   var on=(c.checks||[]).slice(); on.sort();
-  return {sn:c.sn||'',model:c.model||'',fields:o,checks:on};
+  return {sn:c.sn||'',model:c.model||'',fields:o,checks:on,photos:c.photos||[]};
 }
 /* Записати знімок у S. */
 function useSnap(n){
   TEXTF.forEach(function(k){ S[k]=n.fields[k]||''; });
   S.model=n.model||''; S.sn=n.sn||S.sn;
   S.chk={}; n.checks.forEach(function(k){ S.chk[k]=true; });
+  S.photos=n.photos||[];
 }
 
 function sync(){
@@ -1076,8 +1173,11 @@ function sync(){
   syncT=setTimeout(function(){
     fetch('/api/cards',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify(snap())
-    }).then(function(r){ if(!r.ok) throw 0; })
-      .catch(function(){ toast('Не збережено на сервері'); });
+    }).then(function(r){
+      if(r.status===401){ toast('Сесія завершилась — увійдіть знову');
+        setTimeout(function(){ location.href='/login'; },1200); return; }
+      if(!r.ok) throw 0;
+    }).catch(function(){ toast('Не збережено на сервері'); });
   },600);
 }
 
@@ -1104,6 +1204,12 @@ function diff(a,b){
   a.checks.concat(b.checks).forEach(function(k){ set[k]=true; });
   for(var k in set) m.checks.push(k);
   m.checks.sort();
+  /* Фото так само об'єднуються за id — знімок ніколи не «конфліктує». */
+  var seen={};
+  m.photos=[];
+  (a.photos||[]).concat(b.photos||[]).forEach(function(ph){
+    if(ph&&ph.id&&!seen[ph.id]){ seen[ph.id]=true; m.photos.push(ph); }
+  });
   var onlyA=a.checks.filter(function(k){ return b.checks.indexOf(k)<0; }),
       onlyB=b.checks.filter(function(k){ return a.checks.indexOf(k)<0; });
   /* same лише коли жодна сторона не має того, чого немає в іншої —
@@ -1114,8 +1220,12 @@ function diff(a,b){
         bv=(k==='model'?b.model:b.fields[k])||'';
     if(av!==bv&&(!av||!bv)) adds++;
   });
+  /* Фото теж рахуємо: якщо злиття дає більше, ніж є в будь-якої зі
+     сторін, взяти одну сторону означало б втратити знімок. */
+  var phSame=m.photos.length===(a.photos||[]).length&&
+             m.photos.length===(b.photos||[]).length;
   return {conflicts:conf,merged:m,onlyA:onlyA,onlyB:onlyB,adds:adds,
-          same:!conf.length&&!onlyA.length&&!onlyB.length&&!adds};
+          same:!conf.length&&!onlyA.length&&!onlyB.length&&!adds&&phSame};
 }
 function slug(v){
   return String(v||'').trim().toUpperCase().replace(/\s+/g,'-')
@@ -1205,8 +1315,9 @@ function shareDlg(){
    що робити з розбіжностями, dirty=false і на сервер нічого не йде. */
 function loadCard(sn,done){
   dirty=false;
+  if(S.sn!==sn) S.photos=[];   /* інша картка — чужі фото не переносимо */
   var loc=null;
-  try{ var q=localStorage.getItem('dc:'+sn); if(q) loc=snapOf(q); }catch(e){}
+  try{ var q=localStorage.getItem('dc:'+sn); if(q) loc=snapOf(q,S.photos||[]); }catch(e){}
   if(loc) loc.sn=sn;
 
   if(!online()){
@@ -1215,6 +1326,7 @@ function loadCard(sn,done){
   }
 
   fetch('/api/cards?sn='+encodeURIComponent(sn)).then(function(r){
+    if(r.status===401){ location.href='/login'; throw 'auth'; }
     if(r.status===404) return null;
     if(!r.ok) throw 0;
     return r.json();

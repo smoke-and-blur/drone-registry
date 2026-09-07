@@ -80,6 +80,9 @@ header{position:sticky;top:0;z-index:20;background:rgba(14,18,16,.94);
     <b>РЕЄСТР ПОШКОДЖЕНЬ</b>
   </div>
   <div class="spacer"></div>
+  <a class="btn" href="/logout" title="Вийти" style="padding:0 12px">
+    <svg viewBox="0 0 24 24" style="width:17px;height:17px"><path d="M15 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v2M10 12h10m0 0-3-3m3 3-3 3"/></svg>
+  </a>
   <a class="btn pri" href="/">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/></svg>
     Сканувати
@@ -109,7 +112,7 @@ function fmt(iso){
     d.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit'});
 }
 function row(c){
-  var f=c.fields||{},n=(c.checks||[]).length,
+  var f=c.fields||{},n=(c.checks||[]).length,np=(c.photos||[]).length,
       st=f.status?'<span class="tag '+esc(f.status)+'">'+esc(STLBL[f.status]||f.status)+'</span>':'',
       who=[f.holder,f.callsign?'«'+f.callsign+'»':''].filter(Boolean).join(' ');
   return '<a class="row" href="/#sn='+encodeURIComponent(c.sn)+'">'+
@@ -119,7 +122,8 @@ function row(c){
     '<div class="cell hide"><span class="k">Підрозділ</span>'+esc(f.unit||'—')+'</div>'+
     '<div class="cell hide"><span class="k">Власник</span>'+esc(who||'—')+'</div>'+
     '<div style="text-align:right">'+st+
-      '<div class="sub dmg">'+n+' поз. · '+esc(fmt(c.updatedAt))+'</div></div>'+
+      '<div class="sub dmg">'+n+' поз.'+(np?' · '+np+' фото':'')+
+        ' · '+esc(fmt(c.updatedAt))+'</div></div>'+
   '</a>';
 }
 function draw(){
@@ -133,7 +137,10 @@ function draw(){
 }
 document.getElementById('q').oninput=draw;
 
-fetch('/api/cards').then(function(r){ return r.json(); }).then(function(d){
+fetch('/api/cards').then(function(r){
+  if(r.status===401){ location.href='/login'; return []; }
+  return r.json();
+}).then(function(d){
   all=d||[]; draw();
 }).catch(function(){
   document.getElementById('count').textContent='Помилка з’єднання';

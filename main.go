@@ -23,15 +23,27 @@ type Card struct {
 	Model     string            `bson:"model"         json:"model"`
 	Fields    map[string]string `bson:"fields"        json:"fields"`
 	Checks    []string          `bson:"checks"        json:"checks"`
+	Photos    []Photo           `bson:"photos"        json:"photos"`
 	UpdatedAt time.Time         `bson:"updatedAt"     json:"updatedAt"`
 	CreatedAt time.Time         `bson:"createdAt"     json:"createdAt"`
 }
 
+// Photo — знімок у вигляді data-URI (стиснений у браузері).
+// Показується лише в UI, у друк не йде.
+type Photo struct {
+	ID   string `bson:"id"   json:"id"`
+	Data string `bson:"data" json:"data"`
+	Note string `bson:"note" json:"note"`
+	At   string `bson:"at"   json:"at"`
+}
+
 func main() {
 	loadEnvFile(".env")
+	initAuth()
 	uri := os.Getenv("MONGO_URI")
 	if uri == "" {
-		log.Fatal("MONGO_URI not set — див. .env.example")
+		log.Fatal("MONGO_URI is not set: add it in the environment " +
+			"(locally: copy .env.example to .env)")
 	}
 	addr := ":" + env("PORT", "8080")
 
@@ -39,17 +51,21 @@ func main() {
 	defer cancel()
 	cl, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("mongo connect: ", err)
 	}
 	if err := cl.Ping(ctx, nil); err != nil {
-		log.Fatal(err)
+		log.Println("mongo ping failed: ", err)
+		log.Fatal("cannot reach MongoDB. Check that MONGO_URI is correct and that " +
+			"this host's IP is allowed in Atlas → Network Access")
 	}
 	cards = cl.Database(env("MONGO_DB", "drone_registry")).Collection("cards")
 	log.Println("mongo ok")
 
-	http.HandleFunc("/api/cards", apiCards)
-	http.HandleFunc("/list", page("list.html"))
-	http.HandleFunc("/", page("damage-card.html"))
+	http.HandleFunc("/login", handleLogin)
+	http.HandleFunc("/logout", handleLogout)
+	http.HandleFunc("/api/cards", guard(apiCards))
+	http.HandleFunc("/list", guard(page("list.html")))
+	http.HandleFunc("/", guard(page("damage-card.html")))
 
 	log.Println("listening on http://localhost" + addr)
 	log.Fatal(http.ListenAndServe(addr, nil))
@@ -67,10 +83,17 @@ func apiCards(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /api/cards — створити або оновити картку за S/N.
+// Ліміти на фото: документ Mongo не може перевищити 16MB.
+const (
+	maxBody    = 12 << 20 // 12MB на запит
+	maxPhotos  = 8        // знімків на картку
+	maxPhotoSz = 1 << 20  // 1MB на знімок (після стиснення в браузері)
+)
+
 func save(w http.ResponseWriter, r *http.Request) {
 	var c Card
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20)).Decode(&c); err != nil {
-		http.Error(w, "bad json", http.StatusBadRequest)
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxBody)).Decode(&c); err != nil {
+		http.Error(w, "bad json or too large", http.StatusBadRequest)
 		return
 	}
 	if c.SN == "" {
@@ -83,6 +106,23 @@ func save(w http.ResponseWriter, r *http.Request) {
 	if c.Fields == nil {
 		c.Fields = map[string]string{}
 	}
+	if c.Photos == nil {
+		c.Photos = []Photo{}
+	}
+	if len(c.Photos) > maxPhotos {
+		http.Error(w, "too many photos", http.StatusBadRequest)
+		return
+	}
+	for _, p := range c.Photos {
+		if len(p.Data) > maxPhotoSz {
+			http.Error(w, "photo too large", http.StatusBadRequest)
+			return
+		}
+		if !strings.HasPrefix(p.Data, "data:image/") {
+			http.Error(w, "bad photo format", http.StatusBadRequest)
+			return
+		}
+	}
 	now := time.Now().UTC()
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
@@ -92,6 +132,7 @@ func save(w http.ResponseWriter, r *http.Request) {
 			"model":     c.Model,
 			"fields":    c.Fields,
 			"checks":    c.Checks,
+			"photos":    c.Photos,
 			"updatedAt": now,
 		},
 		"$setOnInsert": bson.M{"createdAt": now},
